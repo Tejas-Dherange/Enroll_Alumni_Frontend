@@ -21,6 +21,8 @@ import StudentDashboard from './pages/StudentDashboard';
 import AnnouncementCreate from './pages/AnnouncementCreate';
 import Messages from './pages/Messages';
 import Directory from './pages/Directory';
+import About from './pages/About';
+import Features from './pages/Features';
 
 function App() {
     return (
@@ -30,6 +32,8 @@ function App() {
                 <main className="flex-1">
                     <Routes>
                         <Route path="/" element={<Home />} />
+                        <Route path="/about" element={<About />} />
+                        <Route path="/features" element={<Features />} />
                         <Route path="/login" element={<Login />} />
                         <Route path="/signup" element={<Signup />} />
                         <Route path="/verify-email" element={<VerifyEmail />} />

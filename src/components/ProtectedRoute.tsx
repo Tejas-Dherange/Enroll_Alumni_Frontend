@@ -7,9 +7,15 @@ interface ProtectedRouteProps {
 }
 
 export default function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
-    const { isAuthenticated, user } = useAuthStore();
+    const { isAuthenticated, user, logout } = useAuthStore();
 
     if (!isAuthenticated) {
+        return <Navigate to="/login" replace />;
+    }
+
+    // Check if user is blocked
+    if (user?.status?.toUpperCase() === 'BLOCKED') {
+        logout();
         return <Navigate to="/login" replace />;
     }
 

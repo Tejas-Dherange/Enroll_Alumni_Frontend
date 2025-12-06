@@ -58,6 +58,12 @@ export default function Header() {
                             </>
                         ) : (
                             <>
+                                <Link to="/about" className="text-gray-700 hover:text-primary-600">
+                                    About
+                                </Link>
+                                <Link to="/features" className="text-gray-700 hover:text-primary-600">
+                                    Features
+                                </Link>
                                 <Link to="/login" className="text-gray-700 hover:text-primary-600">
                                     Login
                                 </Link>

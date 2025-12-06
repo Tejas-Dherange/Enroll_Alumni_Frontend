@@ -18,6 +18,14 @@ export default function Login() {
 
         try {
             const data = await authAPI.login(email, password);
+
+            // Check if user is blocked
+            if (data.user.status?.toUpperCase() === 'BLOCKED') {
+                setError('Your account has been blocked. Please contact the administrator for assistance.');
+                setLoading(false);
+                return;
+            }
+
             login(data.token, data.user);
 
             // Redirect based on role
