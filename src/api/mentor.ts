@@ -9,8 +9,8 @@ export const mentorAPI = {
         const response = await api.get('/mentor/pending-announcements');
         return response.data;
     },
-    approveAnnouncement: async (announcementId: string) => {
-        const response = await api.post('/mentor/approve-announcement', { announcementId });
+    approveAnnouncement: async (announcementId: string, targetBatches?: number[]) => {
+        const response = await api.post('/mentor/approve-announcement', { announcementId, targetBatches });
         return response.data;
     },
     rejectAnnouncement: async (announcementId: string, remarks?: string) => {

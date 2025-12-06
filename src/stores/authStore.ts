@@ -8,7 +8,7 @@ interface User {
     lastName: string;
     role: string; // Accept any string to handle both uppercase and lowercase from Prisma
     status: string;
-    emailVerified?: boolean;
+    emailVerified : boolean;
     profile?: {
         college?: string;
         city?: string;
