@@ -5,18 +5,6 @@ export const mentorAPI = {
         const response = await api.get('/mentor/assigned-students');
         return response.data;
     },
-    getPendingAnnouncements: async () => {
-        const response = await api.get('/mentor/pending-announcements');
-        return response.data;
-    },
-    approveAnnouncement: async (announcementId: string, targetBatches?: number[]) => {
-        const response = await api.post('/mentor/approve-announcement', { announcementId, targetBatches });
-        return response.data;
-    },
-    rejectAnnouncement: async (announcementId: string, remarks?: string) => {
-        const response = await api.post('/mentor/reject-announcement', { announcementId, remarks });
-        return response.data;
-    },
     blockStudent: async (studentId: string) => {
         const response = await api.post('/mentor/block-student', { studentId });
         return response.data;

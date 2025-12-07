@@ -53,4 +53,8 @@ export const adminAPI = {
         const response = await api.get('/admin/statistics');
         return response.data;
     },
+    addMentor: async (mentorData: { firstName: string; lastName: string; email: string; password: string }) => {
+        const response = await api.post('/admin/add-mentor', mentorData);
+        return response.data;
+    },
 };

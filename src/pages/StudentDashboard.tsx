@@ -6,7 +6,6 @@ import api from '../api/auth';
 
 export default function StudentDashboard() {
     const { user } = useAuthStore();
-    const [feed, setFeed] = useState<any[]>([]);
     const [myAnnouncements, setMyAnnouncements] = useState<any[]>([]);
     const [mentor, setMentor] = useState<any>(null);
     const [loading, setLoading] = useState(true);
@@ -19,11 +18,7 @@ export default function StudentDashboard() {
 
     const loadData = async () => {
         try {
-            const [feedData, myData] = await Promise.all([
-                announcementAPI.getFeed(),
-                announcementAPI.getMyAnnouncements(),
-            ]);
-            setFeed(feedData);
+            const myData = await announcementAPI.getMyAnnouncements();
             setMyAnnouncements(myData);
 
             const studentProfileResponse = await api.get('/student/profile');
@@ -109,25 +104,6 @@ export default function StudentDashboard() {
 
             <div className="grid lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2 space-y-6">
-                    <div>
-                        <h2 className="text-2xl font-bold mb-4">Announcement Feed</h2>
-                        <div className="space-y-4">
-                            {feed.length === 0 ? (
-                                <p className="text-gray-500 text-center py-8">No announcements yet</p>
-                            ) : (
-                                feed.map((announcement) => (
-                                    <div key={announcement.id} className="card">
-                                        <h3 className="font-semibold text-lg mb-2">{announcement.title}</h3>
-                                        <p className="text-gray-700 mb-2">{announcement.content}</p>
-                                        <p className="text-sm text-gray-500">
-                                            By {announcement.author} • {new Date(announcement.publishedAt).toLocaleDateString()}
-                                        </p>
-                                    </div>
-                                ))
-                            )}
-                        </div>
-                    </div>
-
                     <div>
                         <h2 className="text-2xl font-bold mb-4">My Announcements</h2>
                         <div className="space-y-4">

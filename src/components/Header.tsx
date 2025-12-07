@@ -141,14 +141,25 @@ export default function Header() {
                                         <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50 max-h-96 overflow-hidden flex flex-col">
                                             <div className="px-4 py-3 border-b border-gray-200 flex justify-between items-center">
                                                 <h3 className="font-semibold text-gray-900">Notifications</h3>
-                                                {unreadCount > 0 && (
+                                                <div className="flex items-center space-x-2">
                                                     <button
-                                                        onClick={handleMarkAllAsRead}
-                                                        className="text-xs text-primary-600 hover:text-primary-700"
+                                                        onClick={() => loadNotifications()}
+                                                        className="text-gray-600 hover:text-gray-900 p-1 rounded hover:bg-gray-100"
+                                                        title="Refresh notifications"
                                                     >
-                                                        Mark all read
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                                        </svg>
                                                     </button>
-                                                )}
+                                                    {unreadCount > 0 && (
+                                                        <button
+                                                            onClick={handleMarkAllAsRead}
+                                                            className="text-xs text-primary-600 hover:text-primary-700"
+                                                        >
+                                                            Mark all read
+                                                        </button>
+                                                    )}
+                                                </div>
                                             </div>
                                             <div className="overflow-y-auto flex-1">
                                                 {notifications.length === 0 ? (

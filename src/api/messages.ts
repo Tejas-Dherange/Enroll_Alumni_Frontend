@@ -6,7 +6,7 @@ export const messageAPI = {
         return response.data;
     },
     getConversation: async (userId: string) => {
-        const response = await api.get(`/messages/conversation?with=${userId}`);
+        const response = await api.get(`/messages/conversation/${userId}`);
         return response.data;
     },
 };
