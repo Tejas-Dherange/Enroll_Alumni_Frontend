@@ -131,7 +131,6 @@ export default function Directory() {
                                     <h3 className="font-semibold text-lg mb-2">
                                         {student.firstName} {student.lastName}
                                     </h3>
-                                    <p className="text-sm text-gray-600 mb-1">{student.email}</p>
                                     <p className="text-sm text-gray-500 mb-1">
                                         <strong>College:</strong> {student.college}
                                     </p>
@@ -141,12 +140,7 @@ export default function Directory() {
                                     <p className="text-sm text-gray-500 mb-4">
                                         <strong>Batch:</strong> {student.batchYear}
                                     </p>
-                                    <Link
-                                        to={`/messages?with=${student.id}`}
-                                        className="btn btn-primary w-full text-sm"
-                                    >
-                                        Send Message
-                                    </Link>
+
                                 </div>
                             ))
                         )}

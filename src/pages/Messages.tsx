@@ -10,6 +10,8 @@ export default function Messages() {
     const [newMessage, setNewMessage] = useState('');
     const [mentor, setMentor] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [messagesLoading, setMessagesLoading] = useState(false);
+    const [initialMessagesLoading, setInitialMessagesLoading] = useState(true);
     const { user } = useAuthStore();
     const withUserId = searchParams.get('with');
 
@@ -19,8 +21,9 @@ export default function Messages() {
 
     useEffect(() => {
         if (mentor) {
-            loadMessages();
-            const interval = setInterval(loadMessages, 5000); // Poll every 5 seconds
+            setInitialMessagesLoading(true);
+            loadMessages().finally(() => setInitialMessagesLoading(false));
+            const interval = setInterval(loadMessages, 3600000); // Poll every 1 hour
             return () => clearInterval(interval);
         }
     }, [mentor]);
@@ -36,13 +39,16 @@ export default function Messages() {
         }
     };
 
-    const loadMessages = async () => {
+    const loadMessages = async (showLoading = false) => {
         if (!mentor) return;
+        if (showLoading) setMessagesLoading(true);
         try {
             const data = await messageAPI.getConversation(mentor.id);
             setMessages(data);
         } catch (error) {
             console.error('Failed to load messages:', error);
+        } finally {
+            if (showLoading) setMessagesLoading(false);
         }
     };
 
@@ -80,30 +86,51 @@ export default function Messages() {
     return (
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div className="card">
-                <div className="border-b border-gray-200 pb-4 mb-4">
-                    <h2 className="text-2xl font-bold text-gray-900">
-                        Conversation with {mentor.firstName} {mentor.lastName}
-                    </h2>
-                    <p className="text-sm text-gray-500">{mentor.email}</p>
+                <div className="border-b border-gray-200 pb-4 mb-4 flex justify-between items-start">
+                    <div>
+                        <h2 className="text-2xl font-bold text-gray-900">
+                            Conversation with {mentor.firstName} {mentor.lastName}
+                        </h2>
+                        <p className="text-sm text-gray-500">{mentor.email}</p>
+                    </div>
+                    <button
+                        onClick={() => loadMessages(true)}
+                        className="text-gray-600 hover:text-gray-900 p-2 rounded-lg hover:bg-gray-100"
+                        title="Refresh messages"
+                        disabled={messagesLoading}
+                    >
+                        <svg className={`w-5 h-5 ${messagesLoading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                    </button>
                 </div>
 
                 <div className="h-96 overflow-y-auto mb-4 space-y-3">
-                    {messages.length === 0 ? (
+                    {initialMessagesLoading ? (
+                        <div className="flex items-center justify-center py-12">
+                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+                            <p className="ml-3 text-gray-600">Loading messages...</p>
+                        </div>
+                    ) : messagesLoading ? (
+                        <div className="flex items-center justify-center py-8">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+                        </div>
+                    ) : messages.length === 0 ? (
                         <p className="text-gray-500 text-center py-8">No messages yet. Start the conversation!</p>
                     ) : (
                         messages.map((message) => (
                             <div
                                 key={message.id}
-                                className={`flex ${message.isOwn ? 'justify-end' : 'justify-start'}`}
+                                className={`flex ${message.isMine ? 'justify-end' : 'justify-start'}`}
                             >
                                 <div
-                                    className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${message.isOwn
-                                            ? 'bg-primary-600 text-white'
-                                            : 'bg-gray-200 text-gray-900'
+                                    className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${message.isMine
+                                        ? 'bg-primary-600 text-white'
+                                        : 'bg-gray-200 text-gray-900'
                                         }`}
                                 >
                                     <p>{message.content}</p>
-                                    <p className={`text-xs mt-1 ${message.isOwn ? 'text-primary-100' : 'text-gray-500'}`}>
+                                    <p className={`text-xs mt-1 ${message.isMine ? 'text-primary-100' : 'text-gray-500'}`}>
                                         {new Date(message.sentAt).toLocaleString()}
                                     </p>
                                 </div>

@@ -19,6 +19,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import MentorDashboard from './pages/MentorDashboard';
 import StudentDashboard from './pages/StudentDashboard';
 import AnnouncementCreate from './pages/AnnouncementCreate';
+import Announcements from './pages/Announcements';
 import Messages from './pages/Messages';
 import Directory from './pages/Directory';
 import About from './pages/About';
@@ -63,6 +64,15 @@ function App() {
                             element={
                                 <ProtectedRoute allowedRoles={['STUDENT']}>
                                     <StudentDashboard />
+                                </ProtectedRoute>
+                            }
+                        />
+
+                        <Route
+                            path="/announcements"
+                            element={
+                                <ProtectedRoute>
+                                    <Announcements />
                                 </ProtectedRoute>
                             }
                         />

@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react';
 import { adminAPI } from '../api/admin';
 import Modal from '../components/Modal';
 import BroadcastModal from '../components/BroadcastModal';
+import AddMentorModal from '../components/AddMentorModal';
+import StudentsSection from '../components/admin/StudentsSection';
+import MentorsSection from '../components/admin/MentorsSection';
 
 export default function AdminDashboard() {
     const [activeTab, setActiveTab] = useState('statistics');
@@ -22,6 +25,7 @@ export default function AdminDashboard() {
     const [rejectionRemarks, setRejectionRemarks] = useState('');
     const [selectedBatches, setSelectedBatches] = useState<number[]>([]);
     const [availableBatches, setAvailableBatches] = useState<number[]>([]);
+    const [showAddMentorModal, setShowAddMentorModal] = useState(false);
 
     useEffect(() => {
         loadData();
@@ -41,6 +45,8 @@ export default function AdminDashboard() {
             } else if (activeTab === 'students') {
                 const data = await adminAPI.getAllStudents();
                 setAllStudents(data);
+                const mentorData = await adminAPI.getAllMentors();
+                setMentors(mentorData);
             } else if (activeTab === 'mentors') {
                 const data = await adminAPI.getAllMentors();
                 setMentors(data);
@@ -48,38 +54,36 @@ export default function AdminDashboard() {
                 const data = await adminAPI.getAllAnnouncements();
                 setAnnouncements(data);
             } else if (activeTab === 'pending-announcements') {
-                const [announcementsData, batchesData] = await Promise.all([
-                    adminAPI.getPendingAnnouncements(),
-                    adminAPI.getBatchYears()
-                ]);
-                setPendingAnnouncements(announcementsData);
-                setAvailableBatches(batchesData);
+                const data = await adminAPI.getPendingAnnouncements();
+                setPendingAnnouncements(data);
+                const batches = await adminAPI.getBatchYears();
+                setAvailableBatches(batches);
             }
         } catch (error) {
-            console.error('Failed to load data:', error);
+            console.error('Error loading data:', error);
         } finally {
             setLoading(false);
         }
     };
 
     const handleApprove = async () => {
-        if (!selectedStudent || !selectedMentor) return;
         try {
             await adminAPI.approveStudent(selectedStudent.id, selectedMentor);
             setShowApproveModal(false);
+            setSelectedStudent(null);
+            setSelectedMentor('');
             loadData();
         } catch (error) {
-            console.error('Failed to approve student:', error);
+            console.error('Error approving student:', error);
         }
     };
 
     const handleBlockUser = async (userId: string) => {
-        if (!confirm('Are you sure you want to block this user?')) return;
         try {
             await adminAPI.blockUser(userId);
             loadData();
         } catch (error) {
-            console.error('Failed to block user:', error);
+            console.error('Error blocking user:', error);
         }
     };
 
@@ -88,16 +92,11 @@ export default function AdminDashboard() {
             await adminAPI.unblockUser(userId);
             loadData();
         } catch (error) {
-            console.error('Failed to unblock user:', error);
+            console.error('Error unblocking user:', error);
         }
     };
 
-    const handleSendAnnouncement = async (title: string, content: string, sendEmail: boolean, sendSMS: boolean) => {
-        await adminAPI.sendAnnouncement(title, content, sendEmail, sendSMS);
-    };
-
     const handleApproveAnnouncement = async () => {
-        if (!selectedAnnouncement) return;
         try {
             await adminAPI.approveAnnouncement(selectedAnnouncement.id, selectedBatches);
             setShowBatchModal(false);
@@ -105,12 +104,15 @@ export default function AdminDashboard() {
             setSelectedBatches([]);
             loadData();
         } catch (error) {
-            console.error('Failed to approve announcement:', error);
+            console.error('Error approving announcement:', error);
         }
     };
 
     const handleRejectAnnouncement = async () => {
-        if (!selectedAnnouncement) return;
+        if (!rejectionRemarks.trim()) {
+            alert('Please provide rejection remarks');
+            return;
+        }
         try {
             await adminAPI.rejectAnnouncement(selectedAnnouncement.id, rejectionRemarks);
             setShowRejectModal(false);
@@ -118,7 +120,17 @@ export default function AdminDashboard() {
             setRejectionRemarks('');
             loadData();
         } catch (error) {
-            console.error('Failed to reject announcement:', error);
+            console.error('Error rejecting announcement:', error);
+        }
+    };
+
+    const handleSendAnnouncement = async (title: string, content: string) => {
+        try {
+            await adminAPI.sendBroadcast(title, content);
+            setShowBroadcastModal(false);
+            loadData();
+        } catch (error) {
+            console.error('Error sending announcement:', error);
         }
     };
 
@@ -132,9 +144,19 @@ export default function AdminDashboard() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div className="flex justify-between items-center mb-8">
                 <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-                <button onClick={() => setShowBroadcastModal(true)} className="btn btn-primary">
-                    Send Portal Announcement
-                </button>
+                <div className="flex space-x-3">
+                    {activeTab === 'mentors' && (
+                        <button
+                            onClick={() => setShowAddMentorModal(true)}
+                            className="btn btn-secondary"
+                        >
+                            Add Mentor
+                        </button>
+                    )}
+                    <button onClick={() => setShowBroadcastModal(true)} className="btn btn-primary">
+                        Send Portal Announcement
+                    </button>
+                </div>
             </div>
 
             <div className="mb-6 border-b border-gray-200">
@@ -223,109 +245,21 @@ export default function AdminDashboard() {
                     )}
 
                     {activeTab === 'students' && (
-                        <div className="overflow-x-auto">
-                            <table className="min-w-full divide-y divide-gray-200">
-                                <thead className="bg-gray-50">
-                                    <tr>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">College</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Mentor</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="bg-white divide-y divide-gray-200">
-                                    {allStudents.map((student) => (
-                                        <tr key={student.id}>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                {student.firstName} {student.lastName}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{student.email}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{student.college}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <span className={`px-2 py-1 text-xs rounded-full ${student.status?.toUpperCase() === 'ACTIVE' ? 'bg-green-100 text-green-800' :
-                                                    student.status?.toUpperCase() === 'BLOCKED' ? 'bg-red-100 text-red-800' :
-                                                        'bg-yellow-100 text-yellow-800'
-                                                    }`}>
-                                                    {student.status}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                {student.mentor?.name || 'Not assigned'}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                                {student.status?.toUpperCase() === 'BLOCKED' ? (
-                                                    <button
-                                                        onClick={() => handleUnblockUser(student.id)}
-                                                        className="text-green-600 hover:text-green-900"
-                                                    >
-                                                        Unblock
-                                                    </button>
-                                                ) : (
-                                                    <button
-                                                        onClick={() => handleBlockUser(student.id)}
-                                                        className="text-red-600 hover:text-red-900"
-                                                    >
-                                                        Block
-                                                    </button>
-                                                )}
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
+                        <StudentsSection
+                            students={allStudents}
+                            mentors={mentors}
+                            onBlockUser={handleBlockUser}
+                            onUnblockUser={handleUnblockUser}
+                        />
                     )}
 
                     {activeTab === 'mentors' && (
-                        <div className="overflow-x-auto">
-                            <table className="min-w-full divide-y divide-gray-200">
-                                <thead className="bg-gray-50">
-                                    <tr>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="bg-white divide-y divide-gray-200">
-                                    {mentors.map((mentor) => (
-                                        <tr key={mentor.id}>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                {mentor.firstName} {mentor.lastName}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{mentor.email}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <span className={`px-2 py-1 text-xs rounded-full ${mentor.status?.toUpperCase() === 'ACTIVE' ? 'bg-green-100 text-green-800' :
-                                                    mentor.status?.toUpperCase() === 'BLOCKED' ? 'bg-red-100 text-red-800' :
-                                                        'bg-gray-100 text-gray-800'
-                                                    }`}>
-                                                    {mentor.status}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                                {mentor.status?.toUpperCase() === 'BLOCKED' ? (
-                                                    <button
-                                                        onClick={() => handleUnblockUser(mentor.id)}
-                                                        className="text-green-600 hover:text-green-900"
-                                                    >
-                                                        Unblock
-                                                    </button>
-                                                ) : (
-                                                    <button
-                                                        onClick={() => handleBlockUser(mentor.id)}
-                                                        className="text-red-600 hover:text-red-900"
-                                                    >
-                                                        Block
-                                                    </button>
-                                                )}
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
+                        <MentorsSection
+                            mentors={mentors}
+                            onBlockUser={handleBlockUser}
+                            onUnblockUser={handleUnblockUser}
+                            onAddMentor={() => setShowAddMentorModal(true)}
+                        />
                     )}
 
                     {activeTab === 'pending-announcements' && (
@@ -501,6 +435,15 @@ export default function AdminDashboard() {
                 onClose={() => setShowBroadcastModal(false)}
                 onSend={handleSendAnnouncement}
                 title="Send Portal-Wide Announcement"
+            />
+
+            <AddMentorModal
+                isOpen={showAddMentorModal}
+                onClose={() => setShowAddMentorModal(false)}
+                onSuccess={() => {
+                    setShowAddMentorModal(false);
+                    loadData();
+                }}
             />
         </div>
     );
