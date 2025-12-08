@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { messageAPI } from '../api/messages';
 import { useAuthStore } from '../stores/authStore';
 import api from '../api/auth';
+import { MessagesPageSkeleton, MessagesConversationSkeleton } from '../components/DashboardSkeleton';
 
 export default function Messages() {
     const [searchParams] = useSearchParams();
@@ -66,11 +67,7 @@ export default function Messages() {
     };
 
     if (loading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-            </div>
-        );
+        return <MessagesPageSkeleton />;
     }
 
     if (!mentor) {
@@ -107,10 +104,7 @@ export default function Messages() {
 
                 <div className="h-96 overflow-y-auto mb-4 space-y-3">
                     {initialMessagesLoading ? (
-                        <div className="flex items-center justify-center py-12">
-                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-                            <p className="ml-3 text-gray-600">Loading messages...</p>
-                        </div>
+                        <MessagesConversationSkeleton />
                     ) : messagesLoading ? (
                         <div className="flex items-center justify-center py-8">
                             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>

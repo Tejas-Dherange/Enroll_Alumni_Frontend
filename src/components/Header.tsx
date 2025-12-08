@@ -4,12 +4,14 @@ import { useAuthStore } from '../stores/authStore';
 import eelogo from '../assests/EnrollEngineer logo black.png';
 import { useState, useRef, useEffect } from 'react';
 import { notificationAPI } from '../api/notifications';
+import { Menu, X } from 'lucide-react';
 
 export default function Header() {
     const { isAuthenticated, user, logout } = useAuthStore();
     const navigate = useNavigate();
     const [showProfileMenu, setShowProfileMenu] = useState(false);
     const [showNotifications, setShowNotifications] = useState(false);
+    const [showMobileMenu, setShowMobileMenu] = useState(false);
     const [notifications, setNotifications] = useState<any[]>([]);
     const [unreadCount, setUnreadCount] = useState(0);
     const menuRef = useRef<HTMLDivElement | null>(null);
@@ -108,8 +110,8 @@ export default function Header() {
                         </span>
                     </Link>
 
-                    {/* RIGHT SIDE: NAV + USER + LOGOUT */}
-                    <nav className="flex items-center space-x-6">
+                    {/* RIGHT SIDE: NAV + USER + LOGOUT - Desktop Only (md+) */}
+                    <nav className="hidden md:flex items-center space-x-6">
 
                         {isAuthenticated ? (
                             <>
@@ -277,6 +279,127 @@ export default function Header() {
                             </>
                         )}
                     </nav>
+
+                    {/* Mobile Hamburger Button (visible only on mobile) */}
+                    <button
+                        onClick={() => setShowMobileMenu(!showMobileMenu)}
+                        className="md:hidden p-2 text-gray-700 hover:text-indigo-600 focus:outline-none"
+                        aria-label="Toggle mobile menu"
+                        aria-expanded={showMobileMenu}
+                    >
+                        {showMobileMenu ? (
+                            <X className="w-6 h-6" />
+                        ) : (
+                            <Menu className="w-6 h-6" />
+                        )}
+                    </button>
+                </div>
+
+                {/* Mobile Menu Panel (slide down from top) */}
+                <div
+                    className={`md:hidden transition-all duration-300 ease-in-out overflow-hidden ${showMobileMenu ? 'max-h-screen opacity-100' : 'max-h-0 opacity-0'
+                        }`}
+                >
+                    <div className="px-4 py-4 space-y-3 border-t border-gray-200">
+                        {isAuthenticated ? (
+                            <>
+                                <Link
+                                    to={getDashboardLink()}
+                                    className="block text-gray-700 hover:text-indigo-600 py-2"
+                                    onClick={() => setShowMobileMenu(false)}
+                                >
+                                    Dashboard
+                                </Link>
+
+                                <Link
+                                    to="/announcements"
+                                    className="block text-gray-700 hover:text-indigo-600 py-2"
+                                    onClick={() => setShowMobileMenu(false)}
+                                >
+                                    Feed
+                                </Link>
+
+                                {user?.role?.toUpperCase() === 'STUDENT' && (
+                                    <Link
+                                        to="/messages"
+                                        className="block text-gray-700 hover:text-indigo-600 py-2"
+                                        onClick={() => setShowMobileMenu(false)}
+                                    >
+                                        Messages
+                                    </Link>
+                                )}
+
+                                <Link
+                                    to="/directory"
+                                    className="block text-gray-700 hover:text-indigo-600 py-2"
+                                    onClick={() => setShowMobileMenu(false)}
+                                >
+                                    Directory
+                                </Link>
+
+                                {/* Mobile Profile Section */}
+                                <div className="pt-3 border-t border-gray-200">
+                                    <div className="flex items-center space-x-3 mb-3">
+                                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-semibold text-sm">
+                                            {getInitials()}
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-semibold text-gray-900">
+                                                {user?.firstName} {user?.lastName}
+                                            </p>
+                                            <p className="text-xs text-gray-500">{user?.email}</p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => {
+                                            setShowMobileMenu(false);
+                                            handleLogout();
+                                        }}
+                                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg flex items-center space-x-2"
+                                    >
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                        </svg>
+                                        <span>Logout</span>
+                                    </button>
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                <Link
+                                    to="/about"
+                                    className="block text-gray-700 hover:text-indigo-600 py-2"
+                                    onClick={() => setShowMobileMenu(false)}
+                                >
+                                    About
+                                </Link>
+
+                                <Link
+                                    to="/features"
+                                    className="block text-gray-700 hover:text-indigo-600 py-2"
+                                    onClick={() => setShowMobileMenu(false)}
+                                >
+                                    Features
+                                </Link>
+
+                                <Link
+                                    to="/login"
+                                    className="block text-gray-700 hover:text-indigo-600 py-2"
+                                    onClick={() => setShowMobileMenu(false)}
+                                >
+                                    Login
+                                </Link>
+
+                                <Link
+                                    to="/signup"
+                                    className="block px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg text-sm font-medium transition text-center"
+                                    onClick={() => setShowMobileMenu(false)}
+                                >
+                                    Sign Up
+                                </Link>
+                            </>
+                        )}
+                    </div>
                 </div>
             </div>
         </header>

@@ -5,6 +5,7 @@ import BroadcastModal from '../components/BroadcastModal';
 import AddMentorModal from '../components/AddMentorModal';
 import StudentsSection from '../components/admin/StudentsSection';
 import MentorsSection from '../components/admin/MentorsSection';
+import { StatisticsSkeleton, ListSkeleton } from '../components/DashboardSkeleton';
 
 export default function AdminDashboard() {
     const [activeTab, setActiveTab] = useState('statistics');
@@ -179,9 +180,10 @@ export default function AdminDashboard() {
             </div>
 
             {loading ? (
-                <div className="text-center py-12">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-                </div>
+                <>
+                    {activeTab === 'statistics' && <StatisticsSkeleton />}
+                    {(activeTab === 'pending' || activeTab === 'students' || activeTab === 'mentors' || activeTab === 'announcements' || activeTab === 'pending-announcements') && <ListSkeleton />}
+                </>
             ) : (
                 <>
                     {activeTab === 'statistics' && statistics && (

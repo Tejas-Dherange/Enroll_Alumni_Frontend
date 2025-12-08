@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 
 interface StudentsSectionProps {
     students: any[];
@@ -12,6 +12,10 @@ export default function StudentsSection({ students, mentors, onBlockUser, onUnbl
     const [filterBatch, setFilterBatch] = useState('');
     const [filterStatus, setFilterStatus] = useState('');
     const [filterMentor, setFilterMentor] = useState('');
+
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10); // show tens by default
 
     // Filtered students
     const filteredStudents = useMemo(() => {
@@ -40,8 +44,50 @@ export default function StudentsSection({ students, mentors, onBlockUser, onUnbl
         return filtered;
     }, [students, searchQuery, filterBatch, filterStatus, filterMentor]);
 
+    // Reset to page 1 when the filtered list or page size changes
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [filteredStudents, pageSize]);
+
+    // Pagination calculations
+    const totalItems = filteredStudents.length;
+    const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+    const startIdx = (currentPage - 1) * pageSize;
+    const endIdx = Math.min(startIdx + pageSize, totalItems);
+
+    const paginatedStudents = useMemo(() => {
+        return filteredStudents.slice(startIdx, endIdx);
+    }, [filteredStudents, startIdx, endIdx]);
+
     const uniqueBatches = [...new Set(students.map(s => s.batchYear).filter(Boolean))].sort((a, b) => b - a);
     const uniqueStatuses = [...new Set(students.map(s => s.status).filter(Boolean))];
+
+    const gotoPage = (page: number) => {
+        const p = Math.max(1, Math.min(totalPages, page));
+        setCurrentPage(p);
+        // scroll into view for better UX (optional)
+        // document.querySelector('#students-table')?.scrollIntoView({ behavior: 'smooth' });
+    };
+
+    // Helper to render page numbers with simple truncation for many pages
+    const renderPageNumbers = () => {
+        if (totalPages <= 7) {
+            return Array.from({ length: totalPages }, (_, i) => i + 1);
+        }
+
+        const pages: number[] = [];
+        pages.push(1);
+
+        const left = Math.max(2, currentPage - 1);
+        const right = Math.min(totalPages - 1, currentPage + 1);
+
+        if (left > 2) pages.push(-1); // -1 represents "..."
+        for (let p = left; p <= right; p++) pages.push(p);
+        if (right < totalPages - 1) pages.push(-1);
+        pages.push(totalPages);
+
+        return pages;
+    };
 
     return (
         <>
@@ -82,12 +128,33 @@ export default function StudentsSection({ students, mentors, onBlockUser, onUnbl
                         </select>
                     </div>
                 </div>
-                <div className="mt-3 text-sm text-gray-600">
-                    Showing {filteredStudents.length} of {students.length} students
+
+                <div className="mt-3 flex items-center justify-between text-sm text-gray-600">
+                    <div>
+                        {/* Showing range */}
+                        {totalItems === 0 ? (
+                            <>Showing 0 students</>
+                        ) : (
+                            <>Showing {startIdx + 1}–{endIdx} of {totalItems} students</>
+                        )}
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                        <label className="text-sm text-gray-600">Per page:</label>
+                        <select
+                            value={pageSize}
+                            onChange={(e) => setPageSize(Number(e.target.value))}
+                            className="input"
+                        >
+                            {[5, 10, 20, 50].map(n => (
+                                <option key={n} value={n}>{n}</option>
+                            ))}
+                        </select>
+                    </div>
                 </div>
             </div>
 
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto" id="students-table">
                 <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                         <tr>
@@ -100,7 +167,7 @@ export default function StudentsSection({ students, mentors, onBlockUser, onUnbl
                         </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                        {filteredStudents.map((student) => (
+                        {paginatedStudents.map((student) => (
                             <tr key={student.id}>
                                 <td className="px-6 py-4 whitespace-nowrap">
                                     {student.firstName} {student.lastName}
@@ -137,8 +204,59 @@ export default function StudentsSection({ students, mentors, onBlockUser, onUnbl
                                 </td>
                             </tr>
                         ))}
+
+                        {/* If no students on this page show an empty row */}
+                        {paginatedStudents.length === 0 && (
+                            <tr>
+                                <td colSpan={6} className="px-6 py-8 text-center text-sm text-gray-500">
+                                    No students to display.
+                                </td>
+                            </tr>
+                        )}
                     </tbody>
                 </table>
+            </div>
+
+            {/* Pagination Controls */}
+            <div className="mt-4 flex items-center justify-between">
+                <div className="text-sm text-gray-600">
+                    Page {currentPage} of {totalPages}
+                </div>
+
+                <nav className="flex items-center space-x-2" aria-label="Pagination">
+                    <button
+                        onClick={() => gotoPage(currentPage - 1)}
+                        disabled={currentPage === 1}
+                        className="px-3 py-1 rounded border bg-white disabled:opacity-50"
+                    >
+                        Prev
+                    </button>
+
+                    {/* Page numbers */}
+                    <div className="flex items-center space-x-1">
+                        {renderPageNumbers().map((p, i) => (
+                            p === -1 ? (
+                                <span key={`dots-${i}`} className="px-2">…</span>
+                            ) : (
+                                <button
+                                    key={p}
+                                    onClick={() => gotoPage(p)}
+                                    className={`px-3 py-1 rounded border ${p === currentPage ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white'}`}
+                                >
+                                    {p}
+                                </button>
+                            )
+                        ))}
+                    </div>
+
+                    <button
+                        onClick={() => gotoPage(currentPage + 1)}
+                        disabled={currentPage === totalPages}
+                        className="px-3 py-1 rounded border bg-white disabled:opacity-50"
+                    >
+                        Next
+                    </button>
+                </nav>
             </div>
         </>
     );

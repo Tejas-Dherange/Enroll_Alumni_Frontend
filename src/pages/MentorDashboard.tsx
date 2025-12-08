@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { mentorAPI } from '../api/mentor';
 import BroadcastModal from '../components/BroadcastModal';
 import ChatWidget from '../components/ChatWidget';
+import { MentorTableSkeleton } from '../components/DashboardSkeleton';
 
 export default function MentorDashboard() {
     const [students, setStudents] = useState<any[]>([]);
@@ -134,10 +135,7 @@ export default function MentorDashboard() {
             </div>
 
             {loading ? (
-                <div className="text-center py-12">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-                    <p className="mt-4 text-gray-600">Loading students...</p>
-                </div>
+                <MentorTableSkeleton />
             ) : (
                 <>
                     {/* Search and Filter Controls */}

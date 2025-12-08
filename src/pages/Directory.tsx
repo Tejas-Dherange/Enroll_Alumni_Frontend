@@ -1,6 +1,8 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { GraduationCap, MapPin, Building2 } from 'lucide-react';
 import { studentAPI } from '../api/student';
+import { DirectoryGridSkeleton } from '../components/DashboardSkeleton';
 
 export default function Directory() {
     const [students, setStudents] = useState<any[]>([]);
@@ -112,39 +114,67 @@ export default function Directory() {
 
             {/* Results */}
             {loading ? (
-                <div className="text-center py-12">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-                </div>
+                <DirectoryGridSkeleton />
             ) : (
                 <>
                     <div className="mb-4 text-sm text-gray-600">
                         Found {students.length} student{students.length !== 1 ? 's' : ''}
                     </div>
-                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {students.length === 0 ? (
-                            <p className="col-span-full text-gray-500 text-center py-8">
-                                No students found matching your filters
-                            </p>
-                        ) : (
-                            students.map((student) => (
-                                <div key={student.id} className="card">
-                                    <h3 className="font-semibold text-lg mb-2">
-                                        {student.firstName} {student.lastName}
-                                    </h3>
-                                    <p className="text-sm text-gray-500 mb-1">
-                                        <strong>College:</strong> {student.college}
-                                    </p>
-                                    <p className="text-sm text-gray-500 mb-1">
-                                        <strong>City:</strong> {student.city}
-                                    </p>
-                                    <p className="text-sm text-gray-500 mb-4">
-                                        <strong>Batch:</strong> {student.batchYear}
-                                    </p>
 
-                                </div>
-                            ))
-                        )}
-                    </div>
+                    {students.length === 0 ? (
+                        <p className="text-gray-500 text-center py-8">No students found matching your filters</p>
+                    ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {students.map((student) => (
+                                <Link
+                                    key={student.id}
+                                    className="group"
+                                >
+                                    <div
+                                        className="
+                                            cursor-pointer
+                                            rounded-xl border border-gray-200 bg-white
+                                            p-5 shadow-sm transition-transform transform
+                                            hover:shadow-md hover:-translate-y-1 hover:bg-gray-50
+                                            h-full flex flex-col
+                                        "
+                                    >
+                                        <div className="flex items-start justify-between mb-3">
+                                            <h3 className="font-semibold text-xl text-gray-800">
+                                                {student.firstName} {student.lastName}
+                                            </h3>
+
+                                            <span className="text-sm px-2 py-1 rounded-full bg-indigo-100 text-indigo-700">
+                                                {student.batchYear || '—'}
+                                            </span>
+                                        </div>
+
+                                        <div className="flex-1 space-y-3 text-gray-600 text-sm">
+                                            <p className="flex items-center gap-2">
+                                                <Building2 size={16} className="text-gray-500" />
+                                                <span className="font-medium text-gray-700">College:</span>
+                                                <span className="truncate">{student.college || '—'}</span>
+                                            </p>
+
+                                            <p className="flex items-center gap-2">
+                                                <MapPin size={16} className="text-gray-500" />
+                                                <span className="font-medium text-gray-700">City:</span>
+                                                <span>{student.city || '—'}</span>
+                                            </p>
+
+                                            <p className="flex items-center gap-2">
+                                                <GraduationCap size={16} className="text-indigo-600" />
+                                                <span className="font-medium text-gray-700">Batch:</span>
+                                                <span>{student.batchYear || '—'}</span>
+                                            </p>
+                                        </div>
+
+                                        
+                                    </div>
+                                </Link>
+                            ))}
+                        </div>
+                    )}
                 </>
             )}
         </div>

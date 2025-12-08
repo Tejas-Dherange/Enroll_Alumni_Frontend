@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { announcementAPI } from '../api/announcements';
 import { useAuthStore } from '../stores/authStore';
+import { AnnouncementsFeedSkeleton } from '../components/DashboardSkeleton';
 
 export default function Announcements() {
     const { user } = useAuthStore();
@@ -25,11 +26,7 @@ export default function Announcements() {
     };
 
     if (loading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-            </div>
-        );
+        return <AnnouncementsFeedSkeleton />;
     }
 
     return (
