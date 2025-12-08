@@ -1,3 +1,4 @@
+// Header.tsx
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import eelogo from '../assests/EnrollEngineer logo black.png';
@@ -11,8 +12,8 @@ export default function Header() {
     const [showNotifications, setShowNotifications] = useState(false);
     const [notifications, setNotifications] = useState<any[]>([]);
     const [unreadCount, setUnreadCount] = useState(0);
-    const menuRef = useRef<HTMLDivElement>(null);
-    const notifRef = useRef<HTMLDivElement>(null);
+    const menuRef = useRef<HTMLDivElement | null>(null);
+    const notifRef = useRef<HTMLDivElement | null>(null);
 
     const handleLogout = () => {
         logout();
@@ -42,8 +43,8 @@ export default function Header() {
                 notificationAPI.getNotifications(),
                 notificationAPI.getUnreadCount()
             ]);
-            setNotifications(notifData);
-            setUnreadCount(countData.count);
+            setNotifications(notifData || []);
+            setUnreadCount(countData?.count ?? 0);
         } catch (error) {
             console.error('Failed to load notifications:', error);
         }
@@ -92,15 +93,14 @@ export default function Header() {
     return (
         <header className="w-full bg-white shadow-sm border-b border-gray-200">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-
                 {/* FLEX CONTAINER */}
                 <div className="flex items-center justify-between h-16">
 
                     {/* LEFT: LOGO + NAME */}
                     <Link to="/" className="flex items-center space-x-3">
-                        <img 
-                            src={eelogo} 
-                            alt="EnrollEngineer logo" 
+                        <img
+                            src={eelogo}
+                            alt="EnrollEngineer logo"
                             className="w-20 h-12 object-contain"
                         />
                         <span className="text-xl font-bold text-gray-900">
@@ -113,56 +113,41 @@ export default function Header() {
 
                         {isAuthenticated ? (
                             <>
-                                <Link 
-                                    to={getDashboardLink()} 
+                                <Link
+                                    to={getDashboardLink()}
                                     className="text-gray-700 hover:text-indigo-600"
                                 >
                                     Dashboard
                                 </Link>
 
-                                <Link 
-                                    to="/announcements" 
+                                <Link
+                                    to="/announcements"
                                     className="text-gray-700 hover:text-indigo-600"
                                 >
                                     Feed
                                 </Link>
 
                                 {user?.role?.toUpperCase() === 'STUDENT' && (
-                                    <Link 
-                                        to="/messages" 
+                                    <Link
+                                        to="/messages"
                                         className="text-gray-700 hover:text-indigo-600"
                                     >
                                         Messages
                                     </Link>
                                 )}
 
-                                {/* USER INFO + LOGOUT ON FAR RIGHT */}
-                                <div className="flex items-center space-x-3 pl-4 border-l border-gray-300">
-                                    <span className="text-sm text-gray-700 font-medium">
-                                        {user?.firstName} {user?.lastName}
-                                    </span>
-
-                                    <button
-                                        onClick={handleLogout}
-                                        className="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 
-                                                text-white rounded-lg text-sm font-medium transition"
-                                    >
-                                        Logout
-                                    <>
-                                        <Link to="/directory" className="text-gray-700 hover:text-primary-600">
-                                            Directory
-                                        </Link>
-                                        <Link to="/messages" className="text-gray-700 hover:text-primary-600">
-                                            Messages
-                                        </Link>
-                                    </>
-                                )}
+                                {/* Optional quick links */}
+                                <Link to="/directory" className="text-gray-700 hover:text-indigo-600">
+                                    Directory
+                                </Link>
 
                                 {/* Notification Bell */}
                                 <div className="relative" ref={notifRef}>
                                     <button
-                                        onClick={() => setShowNotifications(!showNotifications)}
-                                        className="relative p-2 text-gray-700 hover:text-primary-600 focus:outline-none"
+                                        onClick={() => setShowNotifications((s) => !s)}
+                                        className="relative p-2 text-gray-700 hover:text-indigo-600 focus:outline-none"
+                                        aria-expanded={showNotifications}
+                                        aria-label="Notifications"
                                     >
                                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
@@ -181,7 +166,7 @@ export default function Header() {
                                                 {unreadCount > 0 && (
                                                     <button
                                                         onClick={handleMarkAllAsRead}
-                                                        className="text-xs text-primary-600 hover:text-primary-700"
+                                                        className="text-xs text-indigo-600 hover:text-indigo-700"
                                                     >
                                                         Mark all read
                                                     </button>
@@ -191,7 +176,7 @@ export default function Header() {
                                                 {notifications.length === 0 ? (
                                                     <p className="text-sm text-gray-500 text-center py-8">No notifications</p>
                                                 ) : (
-                                                    notifications.map((notif) => (
+                                                    notifications.map((notif: any) => (
                                                         <div
                                                             key={notif.id}
                                                             className={`px-4 py-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${!notif.isRead ? 'bg-blue-50' : ''}`}
@@ -200,12 +185,12 @@ export default function Header() {
                                                             <div className="flex justify-between items-start">
                                                                 <h4 className="text-sm font-semibold text-gray-900">{notif.title}</h4>
                                                                 {!notif.isRead && (
-                                                                    <span className="w-2 h-2 bg-blue-500 rounded-full mt-1"></span>
+                                                                    <span className="w-2 h-2 bg-blue-500 rounded-full mt-1" />
                                                                 )}
                                                             </div>
                                                             <p className="text-xs text-gray-600 mt-1">{notif.message}</p>
                                                             <p className="text-xs text-gray-400 mt-1">
-                                                                {new Date(notif.createdAt).toLocaleString()}
+                                                                {notif.createdAt ? new Date(notif.createdAt).toLocaleString() : ''}
                                                             </p>
                                                         </div>
                                                     ))
@@ -218,10 +203,11 @@ export default function Header() {
                                 {/* Profile Dropdown */}
                                 <div className="relative" ref={menuRef}>
                                     <button
-                                        onClick={() => setShowProfileMenu(!showProfileMenu)}
+                                        onClick={() => setShowProfileMenu((s) => !s)}
                                         className="flex items-center space-x-2 focus:outline-none"
+                                        aria-expanded={showProfileMenu}
                                     >
-                                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 to-secondary-500 flex items-center justify-center text-white font-semibold text-sm hover:shadow-lg transition-shadow">
+                                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-semibold text-sm hover:shadow-lg transition-shadow">
                                             {getInitials()}
                                         </div>
                                     </button>
@@ -250,22 +236,22 @@ export default function Header() {
                             </>
                         ) : (
                             <>
-                                <Link 
-                                    to="/about" 
+                                <Link
+                                    to="/about"
                                     className="text-gray-700 hover:text-indigo-600"
                                 >
                                     About
                                 </Link>
 
-                                <Link 
-                                    to="/features" 
+                                <Link
+                                    to="/features"
                                     className="text-gray-700 hover:text-indigo-600"
                                 >
                                     Features
                                 </Link>
 
-                                <Link 
-                                    to="/login" 
+                                <Link
+                                    to="/login"
                                     className="text-gray-700 hover:text-indigo-600"
                                 >
                                     Login
@@ -273,18 +259,15 @@ export default function Header() {
 
                                 <Link
                                     to="/signup"
-                                    className="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 
-                                            text-white rounded-lg text-sm font-medium transition"
+                                    className="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg text-sm font-medium transition"
                                 >
                                     Sign Up
                                 </Link>
                             </>
                         )}
-
                     </nav>
                 </div>
             </div>
         </header>
-
     );
 }

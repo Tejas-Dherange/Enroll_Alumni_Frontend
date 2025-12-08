@@ -108,7 +108,7 @@ export default function TestimonialsCarousel({
 
   return (
     <section
-      className={`w-full bg-white py-12 ${className}`}
+      className={`w-full bg-transparent py-12 ${className}`}
       aria-label="Alumni testimonials"
     >
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
