@@ -9,12 +9,19 @@ export default function AdminDashboard() {
     const [allStudents, setAllStudents] = useState<any[]>([]);
     const [mentors, setMentors] = useState<any[]>([]);
     const [announcements, setAnnouncements] = useState<any[]>([]);
+    const [pendingAnnouncements, setPendingAnnouncements] = useState<any[]>([]);
     const [statistics, setStatistics] = useState<any>(null);
     const [loading, setLoading] = useState(false);
     const [showApproveModal, setShowApproveModal] = useState(false);
     const [showBroadcastModal, setShowBroadcastModal] = useState(false);
+    const [showRejectModal, setShowRejectModal] = useState(false);
+    const [showBatchModal, setShowBatchModal] = useState(false);
     const [selectedStudent, setSelectedStudent] = useState<any>(null);
     const [selectedMentor, setSelectedMentor] = useState('');
+    const [selectedAnnouncement, setSelectedAnnouncement] = useState<any>(null);
+    const [rejectionRemarks, setRejectionRemarks] = useState('');
+    const [selectedBatches, setSelectedBatches] = useState<number[]>([]);
+    const [availableBatches, setAvailableBatches] = useState<number[]>([]);
 
     useEffect(() => {
         loadData();
@@ -40,6 +47,13 @@ export default function AdminDashboard() {
             } else if (activeTab === 'announcements') {
                 const data = await adminAPI.getAllAnnouncements();
                 setAnnouncements(data);
+            } else if (activeTab === 'pending-announcements') {
+                const [announcementsData, batchesData] = await Promise.all([
+                    adminAPI.getPendingAnnouncements(),
+                    adminAPI.getBatchYears()
+                ]);
+                setPendingAnnouncements(announcementsData);
+                setAvailableBatches(batchesData);
             }
         } catch (error) {
             console.error('Failed to load data:', error);
@@ -82,6 +96,38 @@ export default function AdminDashboard() {
         await adminAPI.sendAnnouncement(title, content, sendEmail, sendSMS);
     };
 
+    const handleApproveAnnouncement = async () => {
+        if (!selectedAnnouncement) return;
+        try {
+            await adminAPI.approveAnnouncement(selectedAnnouncement.id, selectedBatches);
+            setShowBatchModal(false);
+            setSelectedAnnouncement(null);
+            setSelectedBatches([]);
+            loadData();
+        } catch (error) {
+            console.error('Failed to approve announcement:', error);
+        }
+    };
+
+    const handleRejectAnnouncement = async () => {
+        if (!selectedAnnouncement) return;
+        try {
+            await adminAPI.rejectAnnouncement(selectedAnnouncement.id, rejectionRemarks);
+            setShowRejectModal(false);
+            setSelectedAnnouncement(null);
+            setRejectionRemarks('');
+            loadData();
+        } catch (error) {
+            console.error('Failed to reject announcement:', error);
+        }
+    };
+
+    const toggleBatch = (batch: number) => {
+        setSelectedBatches(prev =>
+            prev.includes(batch) ? prev.filter(b => b !== batch) : [...prev, batch]
+        );
+    };
+
     return (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div className="flex justify-between items-center mb-8">
@@ -93,16 +139,18 @@ export default function AdminDashboard() {
 
             <div className="mb-6 border-b border-gray-200">
                 <nav className="-mb-px flex space-x-8">
-                    {['statistics', 'pending', 'students', 'mentors', 'announcements'].map((tab) => (
+                    {['statistics', 'pending', 'students', 'mentors', 'pending-announcements', 'announcements'].map((tab) => (
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
-                            className={`py-4 px-1 border-b-2 font-medium text-sm capitalize ${activeTab === tab
+                            className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === tab
                                 ? 'border-primary-500 text-primary-600'
                                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                                 }`}
                         >
-                            {tab === 'pending' ? 'Pending Students' : tab}
+                            {tab === 'pending' ? 'Pending Students' :
+                                tab === 'pending-announcements' ? 'Pending Announcements' :
+                                    tab.charAt(0).toUpperCase() + tab.slice(1)}
                         </button>
                     ))}
                 </nav>
@@ -118,21 +166,17 @@ export default function AdminDashboard() {
                         <div className="space-y-6">
                             <div className="grid md:grid-cols-3 gap-6">
                                 <div className="card bg-gradient-to-br from-blue-50 to-blue-100">
-                                    <h3 className="text-lg font-semibold text-gray-700 mb-2">Total Users</h3>
-                                    <p className="text-4xl font-bold text-blue-600">{statistics.users.total}</p>
+                                    <h3 className="text-lg font-semibold text-gray-700 mb-2">Students</h3>
+                                    <p className="text-4xl font-bold text-blue-600">{statistics.students.total}</p>
                                     <div className="mt-4 text-sm text-gray-600">
-                                        <p>Students: {statistics.users.students}</p>
-                                        <p>Mentors: {statistics.users.mentors}</p>
+                                        <p>Active: {statistics.students.active}</p>
+                                        <p>Pending: {statistics.students.pending}</p>
                                     </div>
                                 </div>
 
                                 <div className="card bg-gradient-to-br from-green-50 to-green-100">
-                                    <h3 className="text-lg font-semibold text-gray-700 mb-2">Active Students</h3>
-                                    <p className="text-4xl font-bold text-green-600">{statistics.users.activeStudents}</p>
-                                    <div className="mt-4 text-sm text-gray-600">
-                                        <p>Pending: {statistics.users.pendingStudents}</p>
-                                        <p>Blocked: {statistics.users.blocked}</p>
-                                    </div>
+                                    <h3 className="text-lg font-semibold text-gray-700 mb-2">Mentors</h3>
+                                    <p className="text-4xl font-bold text-green-600">{statistics.mentors.total}</p>
                                 </div>
 
                                 <div className="card bg-gradient-to-br from-purple-50 to-purple-100">
@@ -201,8 +245,8 @@ export default function AdminDashboard() {
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{student.college}</td>
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <span className={`px-2 py-1 text-xs rounded-full ${student.status?.toUpperCase() === 'ACTIVE' ? 'bg-green-100 text-green-800' :
-                                                        student.status?.toUpperCase() === 'BLOCKED' ? 'bg-red-100 text-red-800' :
-                                                            'bg-yellow-100 text-yellow-800'
+                                                    student.status?.toUpperCase() === 'BLOCKED' ? 'bg-red-100 text-red-800' :
+                                                        'bg-yellow-100 text-yellow-800'
                                                     }`}>
                                                     {student.status}
                                                 </span>
@@ -254,8 +298,8 @@ export default function AdminDashboard() {
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{mentor.email}</td>
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <span className={`px-2 py-1 text-xs rounded-full ${mentor.status?.toUpperCase() === 'ACTIVE' ? 'bg-green-100 text-green-800' :
-                                                        mentor.status?.toUpperCase() === 'BLOCKED' ? 'bg-red-100 text-red-800' :
-                                                            'bg-gray-100 text-gray-800'
+                                                    mentor.status?.toUpperCase() === 'BLOCKED' ? 'bg-red-100 text-red-800' :
+                                                        'bg-gray-100 text-gray-800'
                                                     }`}>
                                                     {mentor.status}
                                                 </span>
@@ -284,6 +328,53 @@ export default function AdminDashboard() {
                         </div>
                     )}
 
+                    {activeTab === 'pending-announcements' && (
+                        <div className="space-y-4">
+                            {pendingAnnouncements.length === 0 ? (
+                                <p className="text-gray-500 text-center py-8">No pending announcements</p>
+                            ) : (
+                                pendingAnnouncements.map((announcement) => (
+                                    <div key={announcement.id} className="card">
+                                        <div className="flex justify-between items-start mb-3">
+                                            <div className="flex-1">
+                                                <h3 className="font-semibold text-lg mb-1">{announcement.title}</h3>
+                                                <p className="text-sm text-gray-600">
+                                                    By {announcement.author.name} ({announcement.author.email})
+                                                </p>
+                                                <p className="text-xs text-gray-500">
+                                                    {announcement.author.college} • Batch {announcement.author.batchYear}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <p className="text-gray-700 mb-4">{announcement.content}</p>
+                                        <div className="flex space-x-3">
+                                            <button
+                                                onClick={() => {
+                                                    setSelectedAnnouncement(announcement);
+                                                    setSelectedBatches([]);
+                                                    setShowBatchModal(true);
+                                                }}
+                                                className="btn btn-primary"
+                                            >
+                                                Approve
+                                            </button>
+                                            <button
+                                                onClick={() => {
+                                                    setSelectedAnnouncement(announcement);
+                                                    setRejectionRemarks('');
+                                                    setShowRejectModal(true);
+                                                }}
+                                                className="btn btn-secondary"
+                                            >
+                                                Reject
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    )}
+
                     {activeTab === 'announcements' && (
                         <div className="space-y-4">
                             {announcements.map((announcement) => (
@@ -291,8 +382,8 @@ export default function AdminDashboard() {
                                     <div className="flex justify-between items-start mb-2">
                                         <h3 className="font-semibold text-lg">{announcement.title}</h3>
                                         <span className={`px-2 py-1 text-xs rounded-full ${announcement.status === 'approved' ? 'bg-green-100 text-green-800' :
-                                                announcement.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                                                    'bg-yellow-100 text-yellow-800'
+                                            announcement.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                                                'bg-yellow-100 text-yellow-800'
                                             }`}>
                                             {announcement.status}
                                         </span>
@@ -334,6 +425,71 @@ export default function AdminDashboard() {
                             Approve
                         </button>
                         <button onClick={() => setShowApproveModal(false)} className="btn btn-secondary flex-1">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            </Modal>
+
+            <Modal isOpen={showBatchModal} onClose={() => setShowBatchModal(false)} title="Select Target Batches">
+                <div className="space-y-4">
+                    <p className="text-sm text-gray-600">
+                        Select which batches should see this announcement. Leave empty to show to all students.
+                    </p>
+                    <div className="space-y-2">
+                        {availableBatches.map((batch) => (
+                            <label key={batch} className="flex items-center space-x-2 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={selectedBatches.includes(batch)}
+                                    onChange={() => toggleBatch(batch)}
+                                    className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                                />
+                                <span>Batch {batch}</span>
+                            </label>
+                        ))}
+                    </div>
+                    {selectedBatches.length > 0 && (
+                        <p className="text-sm text-blue-600">
+                            Will be visible to: Batch {selectedBatches.sort((a, b) => a - b).join(', ')}
+                        </p>
+                    )}
+                    {selectedBatches.length === 0 && (
+                        <p className="text-sm text-green-600">
+                            Will be visible to: All students
+                        </p>
+                    )}
+                    <div className="flex space-x-3 pt-4">
+                        <button onClick={handleApproveAnnouncement} className="btn btn-primary flex-1">
+                            Approve
+                        </button>
+                        <button onClick={() => setShowBatchModal(false)} className="btn btn-secondary flex-1">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            </Modal>
+
+            <Modal isOpen={showRejectModal} onClose={() => setShowRejectModal(false)} title="Reject Announcement">
+                <div className="space-y-4">
+                    <p className="text-sm text-gray-600">
+                        Please provide a reason for rejecting this announcement. The student will be notified.
+                    </p>
+                    <div>
+                        <label className="label">Rejection Remarks</label>
+                        <textarea
+                            className="input"
+                            rows={4}
+                            value={rejectionRemarks}
+                            onChange={(e) => setRejectionRemarks(e.target.value)}
+                            placeholder="Enter reason for rejection..."
+                        />
+                    </div>
+                    <div className="flex space-x-3">
+                        <button onClick={handleRejectAnnouncement} className="btn btn-primary flex-1">
+                            Reject
+                        </button>
+                        <button onClick={() => setShowRejectModal(false)} className="btn btn-secondary flex-1">
                             Cancel
                         </button>
                     </div>

@@ -9,10 +9,13 @@ export default function MentorDashboard() {
     const [students, setStudents] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const [showRejectModal, setShowRejectModal] = useState(false);
+    const [showApproveModal, setShowApproveModal] = useState(false);
     const [showBroadcastModal, setShowBroadcastModal] = useState(false);
     const [broadcastTarget, setBroadcastTarget] = useState<'students' | 'mentors'>('students');
     const [selectedAnnouncement, setSelectedAnnouncement] = useState<any>(null);
     const [rejectionRemarks, setRejectionRemarks] = useState('');
+    const [selectedBatches, setSelectedBatches] = useState<number[]>([]);
+    const [availableBatches, setAvailableBatches] = useState<number[]>([]);
 
     useEffect(() => {
         loadData();
@@ -27,6 +30,9 @@ export default function MentorDashboard() {
             } else if (activeTab === 'students') {
                 const data = await mentorAPI.getAssignedStudents();
                 setStudents(data);
+                // Get unique batch years from students
+                const batches = [...new Set(data.map((s: any) => s.batchYear as number))].sort((a: number, b: number) => b - a);
+                setAvailableBatches(batches as number[]);
             }
         } catch (error) {
             console.error('Failed to load data:', error);
@@ -35,13 +41,28 @@ export default function MentorDashboard() {
         }
     };
 
-    const handleApprove = async (announcementId: string) => {
+    const handleApproveClick = (announcement: any) => {
+        setSelectedAnnouncement(announcement);
+        setSelectedBatches([]);
+        setShowApproveModal(true);
+    };
+
+    const handleApprove = async () => {
+        if (!selectedAnnouncement) return;
         try {
-            await mentorAPI.approveAnnouncement(announcementId);
+            await mentorAPI.approveAnnouncement(selectedAnnouncement.id, selectedBatches.length > 0 ? selectedBatches : undefined);
+            setShowApproveModal(false);
+            setSelectedBatches([]);
             loadData();
         } catch (error) {
             console.error('Failed to approve:', error);
         }
+    };
+
+    const toggleBatch = (batch: number) => {
+        setSelectedBatches(prev =>
+            prev.includes(batch) ? prev.filter(b => b !== batch) : [...prev, batch]
+        );
     };
 
     const handleReject = async () => {
@@ -153,7 +174,7 @@ export default function MentorDashboard() {
                                             </p>
                                             <div className="flex space-x-2">
                                                 <button
-                                                    onClick={() => handleApprove(announcement.id)}
+                                                    onClick={() => handleApproveClick(announcement)}
                                                     className="btn btn-primary"
                                                 >
                                                     Approve
@@ -208,8 +229,8 @@ export default function MentorDashboard() {
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{student.batchYear}</td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <span className={`px-2 py-1 text-xs rounded-full ${student.status?.toUpperCase() === 'ACTIVE' ? 'bg-green-100 text-green-800' :
-                                                            student.status?.toUpperCase() === 'BLOCKED' ? 'bg-red-100 text-red-800' :
-                                                                'bg-yellow-100 text-yellow-800'
+                                                        student.status?.toUpperCase() === 'BLOCKED' ? 'bg-red-100 text-red-800' :
+                                                            'bg-yellow-100 text-yellow-800'
                                                         }`}>
                                                         {student.status}
                                                     </span>
@@ -267,6 +288,59 @@ export default function MentorDashboard() {
                         <button onClick={() => {
                             setShowRejectModal(false);
                             setRejectionRemarks('');
+                        }} className="btn btn-secondary flex-1">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            </Modal>
+
+            <Modal isOpen={showApproveModal} onClose={() => setShowApproveModal(false)} title="Approve Announcement">
+                <div className="space-y-4">
+                    <p className="text-sm text-gray-600">
+                        Approve <strong>{selectedAnnouncement?.title}</strong> and select target batches (optional):
+                    </p>
+
+                    {availableBatches.length > 0 && (
+                        <div>
+                            <label className="label">Target Batches (Leave empty for all students)</label>
+                            <div className="space-y-2 max-h-48 overflow-y-auto">
+                                {availableBatches.map((batch) => (
+                                    <label key={batch} className="flex items-center space-x-2 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedBatches.includes(batch)}
+                                            onChange={() => toggleBatch(batch)}
+                                            className="w-4 h-4 text-primary-600 rounded focus:ring-primary-500"
+                                        />
+                                        <span className="text-sm text-gray-700">Batch {batch}</span>
+                                    </label>
+                                ))}
+                            </div>
+                            {selectedBatches.length > 0 && (
+                                <p className="text-xs text-gray-500 mt-2">
+                                    Selected: {selectedBatches.sort((a, b) => b - a).join(', ')}
+                                </p>
+                            )}
+                        </div>
+                    )}
+
+                    <div className="bg-blue-50 border border-blue-200 text-blue-800 px-3 py-2 rounded text-xs">
+                        {selectedBatches.length > 0
+                            ? `This announcement will be visible only to students in batch ${selectedBatches.sort((a, b) => b - a).join(', ')}`
+                            : 'This announcement will be visible to all students'}
+                    </div>
+
+                    <div className="flex space-x-3">
+                        <button
+                            onClick={handleApprove}
+                            className="btn btn-primary flex-1"
+                        >
+                            Approve
+                        </button>
+                        <button onClick={() => {
+                            setShowApproveModal(false);
+                            setSelectedBatches([]);
                         }} className="btn btn-secondary flex-1">
                             Cancel
                         </button>
