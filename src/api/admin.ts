@@ -49,12 +49,20 @@ export const adminAPI = {
         const response = await api.post('/admin/send-announcement', { title, content, sendEmail, sendSMS });
         return response.data;
     },
+    sendBroadcast: async (title: string, content: string) => {
+        const response = await api.post('/admin/send-announcement', { title, content, sendEmail: false, sendSMS: false });
+        return response.data;
+    },
     getStatistics: async () => {
         const response = await api.get('/admin/statistics');
         return response.data;
     },
     addMentor: async (mentorData: { firstName: string; lastName: string; email: string; password: string }) => {
         const response = await api.post('/admin/add-mentor', mentorData);
+        return response.data;
+    },
+    deleteAnnouncement: async (announcementId: string) => {
+        const response = await api.delete(`/admin/announcements/${announcementId}`);
         return response.data;
     },
 };

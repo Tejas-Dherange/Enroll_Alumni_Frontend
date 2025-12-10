@@ -21,6 +21,7 @@ export default function AdminDashboard() {
     const [showBroadcastModal, setShowBroadcastModal] = useState(false);
     const [showRejectModal, setShowRejectModal] = useState(false);
     const [showBatchModal, setShowBatchModal] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [selectedStudent, setSelectedStudent] = useState<any>(null);
     const [selectedMentor, setSelectedMentor] = useState('');
     const [selectedAnnouncement, setSelectedAnnouncement] = useState<any>(null);
@@ -29,11 +30,19 @@ export default function AdminDashboard() {
     const [availableBatches, setAvailableBatches] = useState<number[]>([]);
     const [showAddMentorModal, setShowAddMentorModal] = useState(false);
 
+    // Track what data has been loaded to avoid refetching
+    const [loadedTabs, setLoadedTabs] = useState<Set<string>>(new Set());
+
     useEffect(() => {
         loadData();
     }, [activeTab]);
 
-    const loadData = async () => {
+    const loadData = async (forceRefresh = false) => {
+        // Skip loading if data already loaded and not forcing refresh
+        if (!forceRefresh && loadedTabs.has(activeTab)) {
+            return;
+        }
+
         setLoading(true);
         try {
             if (activeTab === 'statistics') {
@@ -42,13 +51,19 @@ export default function AdminDashboard() {
             } else if (activeTab === 'pending') {
                 const data = await adminAPI.getPendingStudents();
                 setPendingStudents(data);
-                const mentorData = await adminAPI.getAllMentors();
-                setMentors(mentorData);
+                // Only fetch mentors if not already loaded
+                if (mentors.length === 0) {
+                    const mentorData = await adminAPI.getAllMentors();
+                    setMentors(mentorData);
+                }
             } else if (activeTab === 'students') {
                 const data = await adminAPI.getAllStudents();
                 setAllStudents(data);
-                const mentorData = await adminAPI.getAllMentors();
-                setMentors(mentorData);
+                // Only fetch mentors if not already loaded
+                if (mentors.length === 0) {
+                    const mentorData = await adminAPI.getAllMentors();
+                    setMentors(mentorData);
+                }
             } else if (activeTab === 'mentors') {
                 const data = await adminAPI.getAllMentors();
                 setMentors(data);
@@ -58,9 +73,15 @@ export default function AdminDashboard() {
             } else if (activeTab === 'pending-announcements') {
                 const data = await adminAPI.getPendingAnnouncements();
                 setPendingAnnouncements(data);
-                const batches = await adminAPI.getBatchYears();
-                setAvailableBatches(batches);
+                // Only fetch batches if not already loaded
+                if (availableBatches.length === 0) {
+                    const batches = await adminAPI.getBatchYears();
+                    setAvailableBatches(batches);
+                }
             }
+
+            // Mark this tab as loaded
+            setLoadedTabs(prev => new Set(prev).add(activeTab));
         } catch (error) {
             console.error('Error loading data:', error);
         } finally {
@@ -74,7 +95,13 @@ export default function AdminDashboard() {
             setShowApproveModal(false);
             setSelectedStudent(null);
             setSelectedMentor('');
-            loadData();
+            // Force refresh current tab data
+            setLoadedTabs(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(activeTab);
+                return newSet;
+            });
+            loadData(true);
         } catch (error) {
             console.error('Error approving student:', error);
         }
@@ -90,6 +117,13 @@ export default function AdminDashboard() {
             setMentors(prev => prev.map(mentor =>
                 mentor.id === userId ? { ...mentor, status: 'BLOCKED' } : mentor
             ));
+            // Force refresh current tab
+            setLoadedTabs(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(activeTab);
+                return newSet;
+            });
+            loadData(true);
         } catch (error) {
             console.error('Error blocking user:', error);
             // Optionally reload data on error to ensure consistency
@@ -107,6 +141,13 @@ export default function AdminDashboard() {
             setMentors(prev => prev.map(mentor =>
                 mentor.id === userId ? { ...mentor, status: 'ACTIVE' } : mentor
             ));
+            // Force refresh current tab
+            setLoadedTabs(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(activeTab);
+                return newSet;
+            });
+            loadData(true);
         } catch (error) {
             console.error('Error unblocking user:', error);
             // Optionally reload data on error to ensure consistency
@@ -120,7 +161,14 @@ export default function AdminDashboard() {
             setShowBatchModal(false);
             setSelectedAnnouncement(null);
             setSelectedBatches([]);
-            loadData();
+            // Force refresh announcement tabs
+            setLoadedTabs(prev => {
+                const newSet = new Set(prev);
+                newSet.delete('pending-announcements');
+                newSet.delete('announcements');
+                return newSet;
+            });
+            loadData(true);
         } catch (error) {
             console.error('Error approving announcement:', error);
         }
@@ -136,7 +184,14 @@ export default function AdminDashboard() {
             setShowRejectModal(false);
             setSelectedAnnouncement(null);
             setRejectionRemarks('');
-            loadData();
+            // Force refresh announcement tabs
+            setLoadedTabs(prev => {
+                const newSet = new Set(prev);
+                newSet.delete('pending-announcements');
+                newSet.delete('announcements');
+                return newSet;
+            });
+            loadData(true);
         } catch (error) {
             console.error('Error rejecting announcement:', error);
         }
@@ -146,9 +201,34 @@ export default function AdminDashboard() {
         try {
             await adminAPI.sendBroadcast(title, content);
             setShowBroadcastModal(false);
-            loadData();
+            // Force refresh announcements tab
+            setLoadedTabs(prev => {
+                const newSet = new Set(prev);
+                newSet.delete('announcements');
+                return newSet;
+            });
+            if (activeTab === 'announcements') {
+                loadData(true);
+            }
         } catch (error) {
             console.error('Error sending announcement:', error);
+        }
+    };
+
+    const handleDeleteAnnouncement = async () => {
+        try {
+            await adminAPI.deleteAnnouncement(selectedAnnouncement.id);
+            setShowDeleteModal(false);
+            setSelectedAnnouncement(null);
+            // Force refresh announcements tab
+            setLoadedTabs(prev => {
+                const newSet = new Set(prev);
+                newSet.delete('announcements');
+                return newSet;
+            });
+            loadData(true);
+        } catch (error) {
+            console.error('Error deleting announcement:', error);
         }
     };
 
@@ -446,6 +526,33 @@ export default function AdminDashboard() {
                                             </svg>
                                             <p className="text-lg font-medium text-gray-900 mb-1">No announcements yet</p>
                                             <p className="text-sm text-gray-500">Approved announcements will appear here</p>
+                    {activeTab === 'announcements' && (
+                        <div className="space-y-4">
+                            {announcements.map((announcement) => (
+                                <div key={announcement.id} className="card">
+                                    <div className="flex justify-between items-start mb-2">
+                                        <div className="flex-1">
+                                            <h3 className="font-semibold text-lg">{announcement.title}</h3>
+                                        </div>
+                                        <div className="flex items-center space-x-2">
+                                            <span className={`px-2 py-1 text-xs rounded-full ${announcement.status === 'approved' ? 'bg-green-100 text-green-800' :
+                                                announcement.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                                                    'bg-yellow-100 text-yellow-800'
+                                                }`}>
+                                                {announcement.status}
+                                            </span>
+                                            <button
+                                                onClick={() => {
+                                                    setSelectedAnnouncement(announcement);
+                                                    setShowDeleteModal(true);
+                                                }}
+                                                className="text-red-600 hover:text-red-800 p-1"
+                                                title="Delete announcement"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                                    <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                                                </svg>
+                                            </button>
                                         </div>
                                     </div>
                                 ) : (
@@ -607,6 +714,40 @@ export default function AdminDashboard() {
                     }}
                 />
             </div>
+            <Modal isOpen={showDeleteModal} onClose={() => setShowDeleteModal(false)} title="Delete Announcement">
+                <div className="space-y-4">
+                    <p className="text-sm text-gray-600">
+                        Are you sure you want to delete the announcement <strong>"{selectedAnnouncement?.title}"</strong>?
+                    </p>
+                    <p className="text-sm text-red-600">
+                        This action cannot be undone. The announcement will be permanently removed.
+                    </p>
+                    <div className="flex space-x-3">
+                        <button onClick={handleDeleteAnnouncement} className="btn btn-primary flex-1 bg-red-600 hover:bg-red-700">
+                            Delete
+                        </button>
+                        <button onClick={() => setShowDeleteModal(false)} className="btn btn-secondary flex-1">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            </Modal>
+
+            <BroadcastModal
+                isOpen={showBroadcastModal}
+                onClose={() => setShowBroadcastModal(false)}
+                onSend={handleSendAnnouncement}
+                title="Send Portal-Wide Announcement"
+            />
+
+            <AddMentorModal
+                isOpen={showAddMentorModal}
+                onClose={() => setShowAddMentorModal(false)}
+                onSuccess={() => {
+                    setShowAddMentorModal(false);
+                    loadData();
+                }}
+            />
         </div>
     );
 }

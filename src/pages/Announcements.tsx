@@ -1,28 +1,59 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { announcementAPI } from '../api/announcements';
+import { adminAPI } from '../api/admin';
 import { useAuthStore } from '../stores/authStore';
 import { AnnouncementsFeedSkeleton } from '../components/DashboardSkeleton';
 import { Megaphone, User, Calendar, PlusCircle, Users } from 'lucide-react';
+import Modal from '../components/Modal';
+import { cache } from '../utils/cache';
 
 export default function Announcements() {
     const { user } = useAuthStore();
     const [feed, setFeed] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [selectedAnnouncement, setSelectedAnnouncement] = useState<any>(null);
 
     useEffect(() => {
         loadFeed();
     }, []);
 
-    const loadFeed = async () => {
+    const loadFeed = async (forceRefresh = false) => {
+        // Try to load from cache first
+        if (!forceRefresh) {
+            const cachedData = cache.get<any[]>('announcements-feed');
+            if (cachedData) {
+                setFeed(cachedData);
+                setLoading(false);
+                return;
+            }
+        }
+
         setLoading(true);
         try {
             const data = await announcementAPI.getFeed();
             setFeed(data);
+
+            // Cache the data
+            cache.set('announcements-feed', data);
         } catch (error) {
             console.error('Failed to load announcements:', error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleDeleteAnnouncement = async () => {
+        try {
+            await adminAPI.deleteAnnouncement(selectedAnnouncement.id);
+            setShowDeleteModal(false);
+            setSelectedAnnouncement(null);
+            // Invalidate cache and force refresh feed
+            cache.invalidate('announcements-feed');
+            loadFeed(true);
+        } catch (error) {
+            console.error('Error deleting announcement:', error);
         }
     };
 
@@ -137,6 +168,25 @@ export default function Announcements() {
                     )}
                 </div>
             </div>
+
+            <Modal isOpen={showDeleteModal} onClose={() => setShowDeleteModal(false)} title="Delete Announcement">
+                <div className="space-y-4">
+                    <p className="text-sm text-gray-600">
+                        Are you sure you want to delete the announcement <strong>"{selectedAnnouncement?.title}"</strong>?
+                    </p>
+                    <p className="text-sm text-red-600">
+                        This action cannot be undone. The announcement will be permanently removed.
+                    </p>
+                    <div className="flex space-x-3">
+                        <button onClick={handleDeleteAnnouncement} className="btn btn-primary flex-1 bg-red-600 hover:bg-red-700">
+                            Delete
+                        </button>
+                        <button onClick={() => setShowDeleteModal(false)} className="btn btn-secondary flex-1">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            </Modal>
         </div>
     );
 }
