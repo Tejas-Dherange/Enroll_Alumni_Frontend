@@ -5,6 +5,7 @@ import { adminAPI } from '../api/admin';
 import { useAuthStore } from '../stores/authStore';
 import { AnnouncementsFeedSkeleton } from '../components/DashboardSkeleton';
 import Modal from '../components/Modal';
+import { cache } from '../utils/cache';
 
 export default function Announcements() {
     const { user } = useAuthStore();
@@ -17,11 +18,24 @@ export default function Announcements() {
         loadFeed();
     }, []);
 
-    const loadFeed = async () => {
+    const loadFeed = async (forceRefresh = false) => {
+        // Try to load from cache first
+        if (!forceRefresh) {
+            const cachedData = cache.get<any[]>('announcements-feed');
+            if (cachedData) {
+                setFeed(cachedData);
+                setLoading(false);
+                return;
+            }
+        }
+
         setLoading(true);
         try {
             const data = await announcementAPI.getFeed();
             setFeed(data);
+
+            // Cache the data
+            cache.set('announcements-feed', data);
         } catch (error) {
             console.error('Failed to load announcements:', error);
         } finally {
@@ -34,7 +48,9 @@ export default function Announcements() {
             await adminAPI.deleteAnnouncement(selectedAnnouncement.id);
             setShowDeleteModal(false);
             setSelectedAnnouncement(null);
-            loadFeed();
+            // Invalidate cache and force refresh feed
+            cache.invalidate('announcements-feed');
+            loadFeed(true);
         } catch (error) {
             console.error('Error deleting announcement:', error);
         }

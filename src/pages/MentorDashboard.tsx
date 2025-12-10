@@ -22,16 +22,25 @@ export default function MentorDashboard() {
     const [showChatWidget, setShowChatWidget] = useState(false);
     const [selectedStudent, setSelectedStudent] = useState<any>(null);
 
+    // Track if data has been loaded to avoid refetching
+    const [dataLoaded, setDataLoaded] = useState(false);
+
     useEffect(() => {
         loadData();
     }, []);
 
-    const loadData = async () => {
+    const loadData = async (forceRefresh = false) => {
+        // Skip loading if data already loaded and not forcing refresh
+        if (!forceRefresh && dataLoaded) {
+            return;
+        }
+
         setLoading(true);
         try {
             const data = await mentorAPI.getAssignedStudents();
             setStudents(data);
             setFilteredStudents(data);
+            setDataLoaded(true);
         } catch (error) {
             console.error('Failed to load data:', error);
         } finally {
@@ -85,7 +94,9 @@ export default function MentorDashboard() {
         if (!confirm('Are you sure you want to block this student?')) return;
         try {
             await mentorAPI.blockStudent(studentId);
-            loadData();
+            // Force refresh data
+            setDataLoaded(false);
+            loadData(true);
         } catch (error) {
             console.error('Failed to block student:', error);
         }
@@ -94,7 +105,9 @@ export default function MentorDashboard() {
     const handleUnblockStudent = async (studentId: string) => {
         try {
             await mentorAPI.unblockStudent(studentId);
-            loadData();
+            // Force refresh data
+            setDataLoaded(false);
+            loadData(true);
         } catch (error) {
             console.error('Failed to unblock student:', error);
         }

@@ -4,47 +4,69 @@ import { announcementAPI } from '../api/announcements';
 import { useAuthStore } from '../stores/authStore';
 import api from '../api/auth';
 import { StudentDashboardSkeleton } from '../components/DashboardSkeleton';
-import { MessageSquare, UserCheck, User, Megaphone, GraduationCap, MapPin, Building2} from "lucide-react";
+import { MessageSquare, UserCheck, User, Megaphone, GraduationCap, MapPin, Building2 } from "lucide-react";
+import { cache } from '../utils/cache';
 
 
 export default function StudentDashboard() {
-    const { user } = useAuthStore();
-    const [myAnnouncements, setMyAnnouncements] = useState<any[]>([]);
-    const [mentor, setMentor] = useState<any>(null);
-    const [loading, setLoading] = useState(true);
-    const [studentProfile, setStudentProfile] = useState<any>(null);
+  const { user } = useAuthStore();
+  const [myAnnouncements, setMyAnnouncements] = useState<any[]>([]);
+  const [mentor, setMentor] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [studentProfile, setStudentProfile] = useState<any>(null);
 
-    useEffect(() => {
-        loadData();
-    }, []);
+  useEffect(() => {
+    loadData();
+  }, []);
 
-    const loadData = async () => {
+  const loadData = async (forceRefresh = false) => {
+    // Try to load from cache first
+    if (!forceRefresh) {
+      const cachedData = cache.get<any>('student-dashboard');
+      if (cachedData) {
+        setMyAnnouncements(cachedData.announcements || []);
+        setStudentProfile(cachedData.profile || null);
+        setMentor(cachedData.mentor || null);
+        setLoading(false);
+        return;
+      }
+    }
+
+    setLoading(true);
+    try {
+      const myData = await announcementAPI.getMyAnnouncements();
+      setMyAnnouncements(myData);
+
+      const profileRes = await api.get('/student/profile');
+      setStudentProfile(profileRes.data);
+
+      let mentorData = null;
+      if (user?.profile?.assignedMentorId) {
         try {
-            const myData = await announcementAPI.getMyAnnouncements();
-            setMyAnnouncements(myData);
-
-            const profileRes = await api.get('/student/profile');
-            setStudentProfile(profileRes.data);
-
-            if (user?.profile?.assignedMentorId) {
-                try {
-                    const mentorRes = await api.get('/student/mentor');
-                    setMentor(mentorRes.data);
-                } catch {
-                    console.log("No mentor assigned");
-                }
-            }
-
-        } catch (error) {
-            console.error('Failed to load data:', error);
-        } finally {
-            setLoading(false);
+          const mentorRes = await api.get('/student/mentor');
+          mentorData = mentorRes.data;
+          setMentor(mentorData);
+        } catch {
+          console.log("No mentor assigned");
         }
-    };
+      }
 
-    if (loading) return <StudentDashboardSkeleton />;
+      // Cache the data
+      cache.set('student-dashboard', {
+        announcements: myData,
+        profile: profileRes.data,
+        mentor: mentorData
+      });
+    } catch (error) {
+      console.error('Failed to load data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    return (
+  if (loading) return <StudentDashboardSkeleton />;
+
+  return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
       {/* PAGE HEADING */}
@@ -162,7 +184,7 @@ export default function StudentDashboard() {
                     {/* META */}
                     <div className="mt-3 text-sm text-gray-500 flex items-center justify-between">
                       <div>{new Date(announcement.createdAt).toLocaleString?.() || ''}</div>
-                      
+
                     </div>
                   </article>
                 ))
@@ -204,23 +226,23 @@ export default function StudentDashboard() {
 
             <div className="space-y-2 text-sm text-gray-700">
 
-            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2">
                 <Building2 className="w-4 h-4 text-gray-500" />
                 <span className="font-medium">College:</span>
                 <span className="text-gray-600">{studentProfile?.profile?.college || '—'}</span>
-            </div>
+              </div>
 
-            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-gray-500" />
                 <span className="font-medium">City:</span>
                 <span className="text-gray-600">{studentProfile?.profile?.city || '—'}</span>
-            </div>
+              </div>
 
-            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2">
                 <GraduationCap className="w-4 h-4 text-gray-500" />
                 <span className="font-medium">Batch:</span>
                 <span className="text-gray-600">{studentProfile?.profile?.batchYear || '—'}</span>
-            </div>
+              </div>
 
             </div>
 
