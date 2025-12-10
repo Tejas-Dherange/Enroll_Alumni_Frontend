@@ -1,23 +1,24 @@
-import { Link } from 'react-router-dom';
-import student from '../assests/student.png';
-import mentor from '../assests/mentor.png';
-import admin from '../assests/admin.png';
-import alumni from '../assests/alumni.png';
-import student_lp from '../assests/student_lp.jpg';
-import mentor_lp from '../assests/mentor_lp.jpg';
-import admin_lp from "../assests/admin_lp.png"
-import TestimonialsCarousel from '../components/TestimonialsCarousel';
-import FAQ from '../components/FAQ';
+// src/pages/Home.tsx
+import { Link } from "react-router-dom";
+import student from "../assests/student.png";
+import mentor from "../assests/mentor.png";
+import admin from "../assests/admin.png";
+import alumni from "../assests/alumni.png";
+import student_lp from "../assests/student_lp.jpg";
+import mentor_lp from "../assests/mentor_lp.jpg";
+import admin_lp from "../assests/admin_lp.png";
+import TestimonialsCarousel from "../components/TestimonialsCarousel";
+import FAQ from "../components/FAQ";
+import About from "../pages/About";
+import Features from "../pages/Features";
 
 export default function Home() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-secondary-50">
       {/* HERO SECTION - gradient background */}
       <section className="relative overflow-hidden">
-        {/* Content Container */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="flex flex-col-reverse lg:flex-row items-center justify-between gap-8 lg:gap-16 py-12 sm:py-16 lg:py-20">
-
             {/* LEFT - TEXT SECTION */}
             <div className="w-full lg:w-1/2 text-center lg:text-left">
               <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold text-gray-900 leading-tight mb-4 sm:mb-6">
@@ -94,71 +95,18 @@ export default function Home() {
               </Link>
             </div>
           </div>
-
-          {/* Feature Sections */}
-          <div className="mt-12 sm:mt-16 lg:mt-20 space-y-12 sm:space-y-16 lg:space-y-20 pb-12 sm:pb-16 lg:pb-20">
-            {/* SECTION 1 - Students */}
-            <div className="grid md:grid-cols-2 gap-6 sm:gap-8 lg:gap-12 items-center">
-              <div className="flex justify-center md:justify-start">
-                <img 
-                  src={student_lp} 
-                  alt="Students collaborating" 
-                  className="w-full max-w-[300px] sm:max-w-sm md:max-w-md rounded-xl sm:rounded-2xl shadow-lg hover:shadow-xl transition-shadow"
-                />
-              </div>
-
-              <div className="text-center md:text-left px-4 sm:px-0">
-                <h3 className="text-xl sm:text-2xl lg:text-3xl font-semibold mb-3 sm:mb-4 text-gray-900">
-                  For Students
-                </h3>
-                <p className="text-sm sm:text-base lg:text-lg text-gray-600 leading-relaxed">
-                  Share announcements, connect with mentors, and engage with your community.
-                </p>
-              </div>
-            </div>
-
-            {/* SECTION 2 - Mentors */}
-            <div className="grid md:grid-cols-2 gap-6 sm:gap-8 lg:gap-12 items-center">
-              <div className="text-center md:text-left px-4 sm:px-0 order-2 md:order-1">
-                <h3 className="text-xl sm:text-2xl lg:text-3xl font-semibold mb-3 sm:mb-4 text-gray-900">
-                  For Mentors
-                </h3>
-                <p className="text-sm sm:text-base lg:text-lg text-gray-600 leading-relaxed">
-                  Guide students, approve content, and foster meaningful connections.
-                </p>
-              </div>
-
-              <div className="flex justify-center md:justify-end order-1 md:order-2">
-                <img 
-                  src={mentor_lp} 
-                  alt="Mentors guiding students" 
-                  className="w-full max-w-[300px] sm:max-w-sm md:max-w-md rounded-xl sm:rounded-2xl shadow-lg hover:shadow-xl transition-shadow"
-                />
-              </div>
-            </div>
-
-            {/* SECTION 3 - Admins */}
-            <div className="grid md:grid-cols-2 gap-6 sm:gap-8 lg:gap-12 items-center">
-              <div className="flex justify-center md:justify-start">
-                <img 
-                  src={admin_lp} 
-                  alt="Admin dashboard" 
-                  className="w-full max-w-[300px] sm:max-w-sm md:max-w-md rounded-xl sm:rounded-2xl shadow-lg hover:shadow-xl transition-shadow"
-                />
-              </div>
-
-              <div className="text-center md:text-left px-4 sm:px-0">
-                <h3 className="text-xl sm:text-2xl lg:text-3xl font-semibold mb-3 sm:mb-4 text-gray-900">
-                  For Admins
-                </h3>
-                <p className="text-sm sm:text-base lg:text-lg text-gray-600 leading-relaxed">
-                  Manage users, oversee operations, and maintain community standards.
-                </p>
-              </div>
-            </div>
+          <div className="w-full bg-indigo-600">
+            
           </div>
         </div>
       </div>
+
+
+      {/* Features */}
+      <Features />
+
+      <About />
+      
 
       {/* Testimonials & FAQ - back to gradient background */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">

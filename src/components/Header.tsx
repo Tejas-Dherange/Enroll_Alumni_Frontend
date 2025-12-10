@@ -1,10 +1,24 @@
-// Header.tsx
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import eelogo from '../assests/EnrollEngineer logo black.png';
 import { useState, useRef, useEffect } from 'react';
 import { notificationAPI } from '../api/notifications';
-import { Menu, X } from 'lucide-react';
+import {
+    Menu,
+    X,
+    Bell,
+    LogOut,
+    RefreshCw,
+    LayoutDashboard,
+    Rss,
+    MessageSquare,
+    Users,
+    Info,
+    Zap,
+    LogIn,
+    UserPlus,
+    ChevronDown
+} from 'lucide-react';
 
 export default function Header() {
     const { isAuthenticated, user, logout } = useAuthStore();
@@ -14,12 +28,39 @@ export default function Header() {
     const [showMobileMenu, setShowMobileMenu] = useState(false);
     const [notifications, setNotifications] = useState<any[]>([]);
     const [unreadCount, setUnreadCount] = useState(0);
+    const [isScrolled, setIsScrolled] = useState(false);
+
     const menuRef = useRef<HTMLDivElement | null>(null);
     const notifRef = useRef<HTMLDivElement | null>(null);
+
+    const location = useLocation();
+
+    // Handle scroll effect for sticky header
+    useEffect(() => {
+        const handleScroll = () => {
+            setIsScrolled(window.scrollY > 10);
+        };
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
+
+    const navigateToSection = (sectionId: string) => {
+        if (location.pathname === '/') {
+            const el = document.getElementById(sectionId);
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                setShowMobileMenu(false);
+                return;
+            }
+        }
+        navigate('/', { state: { scrollTo: sectionId } });
+        setShowMobileMenu(false);
+    };
 
     const handleLogout = () => {
         logout();
         navigate('/login');
+        setShowMobileMenu(false);
     };
 
     const getDashboardLink = () => {
@@ -92,311 +133,298 @@ export default function Header() {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    return (
-        <header className="w-full bg-white shadow-sm border-b border-gray-200">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                {/* FLEX CONTAINER */}
-                <div className="flex items-center justify-between h-16">
+    // Nav Link Component for consistent styling
+    const NavLink = ({ to, icon: Icon, children, onClick }: { to: string, icon?: any, children: React.ReactNode, onClick?: () => void }) => {
+        const isActive = location.pathname.startsWith(to) && to !== '/' || (to === '/' && location.pathname === '/');
 
-                    {/* LEFT: LOGO + NAME */}
-                    <Link to="/" className="flex items-center space-x-3">
-                        <img
-                            src={eelogo}
-                            alt="EnrollEngineer logo"
-                            className="w-20 h-12 object-contain"
-                        />
-                        <span className="text-xl font-bold text-gray-900">
+        return (
+            <Link
+                to={to}
+                onClick={onClick}
+                className={`flex items-center space-x-2 px-3 py-2 rounded-md transition-all duration-200 ${isActive
+                        ? 'text-indigo-600 bg-indigo-50 font-medium'
+                        : 'text-gray-600 hover:text-indigo-600 hover:bg-gray-50'
+                    }`}
+            >
+                {Icon && <Icon className="w-4 h-4" />}
+                <span>{children}</span>
+            </Link>
+        );
+    };
+
+    // Mobile Nav Link
+    const MobileNavLink = ({ to, icon: Icon, children, onClick }: { to?: string, icon: any, children: React.ReactNode, onClick?: () => void }) => {
+        const isActive = to ? (location.pathname.startsWith(to) && to !== '/' || (to === '/' && location.pathname === '/')) : false;
+
+        const Wrapper = to ? Link : 'button';
+        const props = to ? { to, onClick: () => { onClick?.(); setShowMobileMenu(false); } } : { onClick: () => { onClick?.(); setShowMobileMenu(false); } };
+
+        return (
+            // @ts-ignore
+            <Wrapper
+                {...props}
+                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 ${isActive
+                        ? 'bg-indigo-50 text-indigo-700 font-medium'
+                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                    }`}
+            >
+                <div className={`p-2 rounded-lg ${isActive ? 'bg-white shadow-sm' : 'bg-transparent'}`}>
+                    <Icon className="w-5 h-5" />
+                </div>
+                <span className="text-base">{children}</span>
+            </Wrapper>
+        );
+    };
+
+    return (
+        <header
+            className={`sticky top-0 z-50 w-full transition-all duration-300 ${isScrolled || showMobileMenu
+                    ? 'bg-white/90 backdrop-blur-md shadow-sm border-b border-gray-200/50'
+                    : 'bg-white border-b border-transparent'
+                }`}
+        >
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="flex items-center justify-between h-20">
+
+                    {/* Left: Logo */}
+                    <Link to="/" className="flex items-center space-x-3 group z-50">
+                        <div className="relative">
+                            <div className="absolute inset-0 bg-indigo-500 blur-lg opacity-0 group-hover:opacity-20 transition-opacity duration-300 rounded-full"></div>
+                            <img
+                                src={eelogo}
+                                alt="EnrollEngineer logo"
+                                className="w-auto h-10 object-contain relative transition-transform duration-300 group-hover:scale-105"
+                            />
+                        </div>
+                        <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-700">
                             Community Portal
                         </span>
                     </Link>
 
-                    {/* RIGHT SIDE: NAV + USER + LOGOUT - Desktop Only (md+) */}
-                    <nav className="hidden md:flex items-center space-x-6">
-
+                    {/* Desktop Navigation */}
+                    <nav className="hidden md:flex items-center space-x-1">
                         {isAuthenticated ? (
                             <>
-                                <Link
-                                    to={getDashboardLink()}
-                                    className="text-gray-700 hover:text-indigo-600"
-                                >
-                                    Dashboard
-                                </Link>
-
-                                <Link
-                                    to="/announcements"
-                                    className="text-gray-700 hover:text-indigo-600"
-                                >
-                                    Feed
-                                </Link>
+                                <NavLink to={getDashboardLink()} icon={LayoutDashboard}>Dashboard</NavLink>
+                                <NavLink to="/announcements" icon={Rss}>Feed</NavLink>
 
                                 {user?.role?.toUpperCase() === 'STUDENT' && (
-                                    <Link
-                                        to="/messages"
-                                        className="text-gray-700 hover:text-indigo-600"
-                                    >
-                                        Messages
-                                    </Link>
+                                    <NavLink to="/messages" icon={MessageSquare}>Messages</NavLink>
                                 )}
 
-                                {/* Optional quick links */}
-                                <Link to="/directory" className="text-gray-700 hover:text-indigo-600">
-                                    Directory
-                                </Link>
+                                <NavLink to="/directory" icon={Users}>Directory</NavLink>
 
-                                {/* Notification Bell */}
-                                <div className="relative" ref={notifRef}>
-                                    <button
-                                        onClick={() => setShowNotifications((s) => !s)}
-                                        className="relative p-2 text-gray-700 hover:text-indigo-600 focus:outline-none"
-                                        aria-expanded={showNotifications}
-                                        aria-label="Notifications"
-                                    >
-                                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                                        </svg>
-                                        {unreadCount > 0 && (
-                                            <span className="absolute top-0 right-0 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full">
-                                                {unreadCount > 9 ? '9+' : unreadCount}
-                                            </span>
-                                        )}
-                                    </button>
+                                <div className="ml-4 flex items-center space-x-4 pl-4 border-l border-gray-200">
+                                    {/* Notifications */}
+                                    <div className="relative" ref={notifRef}>
+                                        <button
+                                            onClick={() => setShowNotifications((s) => !s)}
+                                            className="relative p-2 text-gray-500 hover:text-indigo-600 hover:bg-gray-50 rounded-full transition-all duration-200 focus:outline-none"
+                                            aria-label="Notifications"
+                                        >
+                                            <Bell className="w-5 h-5" />
+                                            {unreadCount > 0 && (
+                                                <span className="absolute top-1.5 right-1.5 flex h-2.5 w-2.5">
+                                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
+                                                </span>
+                                            )}
+                                        </button>
 
-                                    {showNotifications && (
-                                        <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50 max-h-96 overflow-hidden flex flex-col">
-                                            <div className="px-4 py-3 border-b border-gray-200 flex justify-between items-center">
-                                                <h3 className="font-semibold text-gray-900">Notifications</h3>
-                                                <div className="flex items-center space-x-2">
-                                                    <button
-                                                        onClick={() => loadNotifications()}
-                                                        className="text-gray-600 hover:text-gray-900 p-1 rounded hover:bg-gray-100"
-                                                        title="Refresh notifications"
-                                                    >
-                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                                        </svg>
-                                                    </button>
-                                                    {unreadCount > 0 && (
+                                        {showNotifications && (
+                                            <div className="absolute right-0 mt-3 w-80 bg-white rounded-xl shadow-xl border border-gray-100 ring-1 ring-black ring-opacity-5 overflow-hidden animate-in slide-in-from-top-2 duration-200">
+                                                <div className="px-4 py-3 border-b border-gray-50 flex justify-between items-center bg-gray-50/50">
+                                                    <h3 className="text-sm font-semibold text-gray-900">Notifications</h3>
+                                                    <div className="flex items-center space-x-1">
                                                         <button
-                                                            onClick={handleMarkAllAsRead}
-                                                            className="text-xs text-primary-600 hover:text-primary-700"
+                                                            onClick={() => loadNotifications()}
+                                                            className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
+                                                            title="Refresh"
                                                         >
-                                                            Mark all read
+                                                            <RefreshCw className="w-3.5 h-3.5" />
                                                         </button>
+                                                        {unreadCount > 0 && (
+                                                            <button
+                                                                onClick={handleMarkAllAsRead}
+                                                                className="text-xs text-indigo-600 hover:text-indigo-700 font-medium px-2 py-1 rounded-md hover:bg-indigo-50 transition-colors"
+                                                            >
+                                                                Mark all read
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                <div className="max-h-[24rem] overflow-y-auto custom-scrollbar">
+                                                    {notifications.length === 0 ? (
+                                                        <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
+                                                            <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center mb-3">
+                                                                <Bell className="w-6 h-6 text-gray-300" />
+                                                            </div>
+                                                            <p className="text-sm text-gray-500">No new notifications</p>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="divide-y divide-gray-50">
+                                                            {notifications.map((notif: any) => (
+                                                                <div
+                                                                    key={notif.id}
+                                                                    className={`px-4 py-3 hover:bg-gray-50 transition-colors cursor-pointer ${!notif.isRead ? 'bg-indigo-50/30' : ''}`}
+                                                                    onClick={() => !notif.isRead && handleMarkAsRead(notif.id)}
+                                                                >
+                                                                    <div className="flex justify-between items-start gap-3">
+                                                                        <div className="flex-1 min-w-0">
+                                                                            <p className="text-sm font-medium text-gray-900 truncate">
+                                                                                {notif.title}
+                                                                            </p>
+                                                                            <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">
+                                                                                {notif.message}
+                                                                            </p>
+                                                                            <p className="text-[10px] text-gray-400 mt-1.5">
+                                                                                {notif.createdAt ? new Date(notif.createdAt).toLocaleDateString() : ''}
+                                                                            </p>
+                                                                        </div>
+                                                                        {!notif.isRead && (
+                                                                            <span className="w-2 h-2 bg-indigo-500 rounded-full flex-shrink-0 mt-1.5" />
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
                                                     )}
                                                 </div>
                                             </div>
-                                            <div className="overflow-y-auto flex-1">
-                                                {notifications.length === 0 ? (
-                                                    <p className="text-sm text-gray-500 text-center py-8">No notifications</p>
-                                                ) : (
-                                                    notifications.map((notif: any) => (
-                                                        <div
-                                                            key={notif.id}
-                                                            className={`px-4 py-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${!notif.isRead ? 'bg-blue-50' : ''}`}
-                                                            onClick={() => !notif.isRead && handleMarkAsRead(notif.id)}
-                                                        >
-                                                            <div className="flex justify-between items-start">
-                                                                <h4 className="text-sm font-semibold text-gray-900">{notif.title}</h4>
-                                                                {!notif.isRead && (
-                                                                    <span className="w-2 h-2 bg-blue-500 rounded-full mt-1" />
-                                                                )}
-                                                            </div>
-                                                            <p className="text-xs text-gray-600 mt-1">{notif.message}</p>
-                                                            <p className="text-xs text-gray-400 mt-1">
-                                                                {notif.createdAt ? new Date(notif.createdAt).toLocaleString() : ''}
-                                                            </p>
-                                                        </div>
-                                                    ))
-                                                )}
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
+                                        )}
+                                    </div>
 
-                                {/* Profile Dropdown */}
-                                <div className="relative" ref={menuRef}>
-                                    <button
-                                        onClick={() => setShowProfileMenu((s) => !s)}
-                                        className="flex items-center space-x-2 focus:outline-none"
-                                        aria-expanded={showProfileMenu}
-                                    >
-                                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-semibold text-sm hover:shadow-lg transition-shadow">
-                                            {getInitials()}
-                                        </div>
-                                    </button>
-
-                                    {showProfileMenu && (
-                                        <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
-                                            <div className="px-4 py-3 border-b border-gray-200">
-                                                <p className="text-sm font-semibold text-gray-900">
-                                                    {user?.firstName} {user?.lastName}
-                                                </p>
-                                                <p className="text-xs text-gray-500">{user?.email}</p>
-                                                <p className="text-xs text-gray-400 mt-1 capitalize">{user?.role?.toLowerCase()}</p>
+                                    {/* Profile Dropdown */}
+                                    <div className="relative" ref={menuRef}>
+                                        <button
+                                            onClick={() => setShowProfileMenu((s) => !s)}
+                                            className="flex items-center space-x-2 focus:outline-none group"
+                                            aria-expanded={showProfileMenu}
+                                        >
+                                            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm shadow-md ring-2 ring-white group-hover:shadow-lg transition-all duration-200">
+                                                {getInitials()}
                                             </div>
-                                            <button
-                                                onClick={handleLogout}
-                                                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
-                                            >
-                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                                                </svg>
-                                                <span>Logout</span>
-                                            </button>
-                                        </div>
-                                    )}
+                                            <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${showProfileMenu ? 'rotate-180' : ''}`} />
+                                        </button>
+
+                                        {showProfileMenu && (
+                                            <div className="absolute right-0 mt-3 w-60 bg-white rounded-xl shadow-xl border border-gray-100 ring-1 ring-black ring-opacity-5 overflow-hidden animate-in slide-in-from-top-2 duration-200">
+                                                <div className="px-5 py-4 border-b border-gray-50 bg-gray-50/50">
+                                                    <p className="text-sm font-semibold text-gray-900">
+                                                        {user?.firstName} {user?.lastName}
+                                                    </p>
+                                                    <p className="text-xs text-gray-500 mt-0.5 truncate">{user?.email}</p>
+                                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-50 text-indigo-700 mt-2 capitalize border border-indigo-100">
+                                                        {user?.role?.toLowerCase()}
+                                                    </span>
+                                                </div>
+                                                <div className="py-1">
+                                                    {/* <Link to="/settings" className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                                                        <Settings className="w-4 h-4" />
+                                                        <span>Settings</span>
+                                                    </Link> */}
+                                                    <button
+                                                        onClick={handleLogout}
+                                                        className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center space-x-2 transition-colors"
+                                                    >
+                                                        <LogOut className="w-4 h-4" />
+                                                        <span>Sign out</span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </>
                         ) : (
-                            <>
-                                <Link
-                                    to="/about"
-                                    className="text-gray-700 hover:text-indigo-600"
+                            // Public Nav Items
+                            <div className="flex items-center space-x-4">
+                                <button
+                                    onClick={() => navigateToSection("about")}
+                                    className="text-sm font-medium text-gray-600 hover:text-indigo-600 transition-colors"
                                 >
                                     About
-                                </Link>
-
-                                <Link
-                                    to="/features"
-                                    className="text-gray-700 hover:text-indigo-600"
+                                </button>
+                                <button
+                                    onClick={() => navigateToSection('features')}
+                                    className="text-sm font-medium text-gray-600 hover:text-indigo-600 transition-colors"
                                 >
                                     Features
-                                </Link>
-
+                                </button>
+                                <div className="h-6 w-px bg-gray-200 mx-2"></div>
                                 <Link
                                     to="/login"
-                                    className="text-gray-700 hover:text-indigo-600"
+                                    className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
                                 >
-                                    Login
+                                    Log in
                                 </Link>
-
                                 <Link
                                     to="/signup"
-                                    className="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg text-sm font-medium transition"
+                                    className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg shadow-sm shadow-indigo-200 transition-all hover:shadow-md hover:-translate-y-0.5"
                                 >
                                     Sign Up
                                 </Link>
-                            </>
+                            </div>
                         )}
                     </nav>
 
-                    {/* Mobile Hamburger Button (visible only on mobile) */}
-                    <button
-                        onClick={() => setShowMobileMenu(!showMobileMenu)}
-                        className="md:hidden p-2 text-gray-700 hover:text-indigo-600 focus:outline-none"
-                        aria-label="Toggle mobile menu"
-                        aria-expanded={showMobileMenu}
-                    >
-                        {showMobileMenu ? (
-                            <X className="w-6 h-6" />
-                        ) : (
-                            <Menu className="w-6 h-6" />
-                        )}
-                    </button>
+                    {/* Mobile Menu Button */}
+                    <div className="md:hidden">
+                        <button
+                            onClick={() => setShowMobileMenu(!showMobileMenu)}
+                            className="p-2 text-gray-600 hover:text-indigo-600 hover:bg-gray-50 rounded-lg transition-colors focus:outline-none"
+                            aria-label="Toggle mobile menu"
+                        >
+                            {showMobileMenu ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+                        </button>
+                    </div>
                 </div>
+            </div>
 
-                {/* Mobile Menu Panel (slide down from top) */}
-                <div
-                    className={`md:hidden transition-all duration-300 ease-in-out overflow-hidden ${showMobileMenu ? 'max-h-screen opacity-100' : 'max-h-0 opacity-0'
-                        }`}
-                >
-                    <div className="px-4 py-4 space-y-3 border-t border-gray-200">
+            {/* Mobile Menu Panel */}
+            <div
+                className={`md:hidden fixed inset-0 z-40 bg-white transform transition-transform duration-300 ease-in-out ${showMobileMenu ? 'translate-x-0' : 'translate-x-full'
+                    }`}
+                style={{ top: '80px' }} // Below the header
+            >
+                <div className="flex flex-col h-full bg-white divide-y divide-gray-100">
+                    <div className="px-4 py-6 space-y-2 overflow-y-auto pb-20">
                         {isAuthenticated ? (
                             <>
-                                <Link
-                                    to={getDashboardLink()}
-                                    className="block text-gray-700 hover:text-indigo-600 py-2"
-                                    onClick={() => setShowMobileMenu(false)}
-                                >
-                                    Dashboard
-                                </Link>
-
-                                <Link
-                                    to="/announcements"
-                                    className="block text-gray-700 hover:text-indigo-600 py-2"
-                                    onClick={() => setShowMobileMenu(false)}
-                                >
-                                    Feed
-                                </Link>
-
+                                <MobileNavLink to={getDashboardLink()} icon={LayoutDashboard}>Dashboard</MobileNavLink>
+                                <MobileNavLink to="/announcements" icon={Rss}>Feed</MobileNavLink>
                                 {user?.role?.toUpperCase() === 'STUDENT' && (
-                                    <Link
-                                        to="/messages"
-                                        className="block text-gray-700 hover:text-indigo-600 py-2"
-                                        onClick={() => setShowMobileMenu(false)}
-                                    >
-                                        Messages
-                                    </Link>
+                                    <MobileNavLink to="/messages" icon={MessageSquare}>Messages</MobileNavLink>
                                 )}
+                                <MobileNavLink to="/directory" icon={Users}>Directory</MobileNavLink>
 
-                                <Link
-                                    to="/directory"
-                                    className="block text-gray-700 hover:text-indigo-600 py-2"
-                                    onClick={() => setShowMobileMenu(false)}
-                                >
-                                    Directory
-                                </Link>
+                                <div className="mt-8 pt-8 border-t border-gray-100">
+                                    <h4 className="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Account</h4>
 
-                                {/* Mobile Profile Section */}
-                                <div className="pt-3 border-t border-gray-200">
-                                    <div className="flex items-center space-x-3 mb-3">
-                                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-semibold text-sm">
+                                    <div className="px-4 flex items-center space-x-3 mb-6 bg-gray-50 p-4 rounded-xl mx-2">
+                                        <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-semibold text-sm">
                                             {getInitials()}
                                         </div>
-                                        <div>
-                                            <p className="text-sm font-semibold text-gray-900">
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-semibold text-gray-900 truncate">
                                                 {user?.firstName} {user?.lastName}
                                             </p>
-                                            <p className="text-xs text-gray-500">{user?.email}</p>
+                                            <p className="text-xs text-gray-500 truncate">{user?.email}</p>
                                         </div>
                                     </div>
-                                    <button
-                                        onClick={() => {
-                                            setShowMobileMenu(false);
-                                            handleLogout();
-                                        }}
-                                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg flex items-center space-x-2"
-                                    >
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                                        </svg>
-                                        <span>Logout</span>
-                                    </button>
+
+                                    <MobileNavLink icon={LogOut} onClick={handleLogout}>
+                                        Sign out
+                                    </MobileNavLink>
                                 </div>
                             </>
                         ) : (
                             <>
-                                <Link
-                                    to="/about"
-                                    className="block text-gray-700 hover:text-indigo-600 py-2"
-                                    onClick={() => setShowMobileMenu(false)}
-                                >
-                                    About
-                                </Link>
-
-                                <Link
-                                    to="/features"
-                                    className="block text-gray-700 hover:text-indigo-600 py-2"
-                                    onClick={() => setShowMobileMenu(false)}
-                                >
-                                    Features
-                                </Link>
-
-                                <Link
-                                    to="/login"
-                                    className="block text-gray-700 hover:text-indigo-600 py-2"
-                                    onClick={() => setShowMobileMenu(false)}
-                                >
-                                    Login
-                                </Link>
-
-                                <Link
-                                    to="/signup"
-                                    className="block px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg text-sm font-medium transition text-center"
-                                    onClick={() => setShowMobileMenu(false)}
-                                >
-                                    Sign Up
-                                </Link>
+                                <MobileNavLink icon={Info} onClick={() => navigateToSection("about")}>About</MobileNavLink>
+                                <MobileNavLink icon={Zap} onClick={() => navigateToSection("features")}>Features</MobileNavLink>
+                                <hr className="border-gray-100 my-4" />
+                                <MobileNavLink to="/login" icon={LogIn}>Log in</MobileNavLink>
+                                <MobileNavLink to="/signup" icon={UserPlus}>Sign Up</MobileNavLink>
                             </>
                         )}
                     </div>
