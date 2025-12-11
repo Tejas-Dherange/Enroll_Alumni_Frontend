@@ -19,6 +19,7 @@ export default function Directory() {
   const [students, setStudents] = useState<any[]>([]);
   const [colleges, setColleges] = useState<string[]>([]);
   const [cities, setCities] = useState<string[]>([]);
+  const [batches, setBatches] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Filters & pagination
@@ -26,11 +27,15 @@ export default function Directory() {
     search: "",
     college: "",
     city: "",
+    batch: "",
   });
 
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(12);
   const [total, setTotal] = useState(0);
+
+  // mobile filter panel
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
     loadFilterOptions();
@@ -43,12 +48,15 @@ export default function Directory() {
 
   const loadFilterOptions = async () => {
     try {
-      const [collegeData, cityData] = await Promise.all([
+      const [collegeData, cityData, batchData] = await Promise.all([
         studentAPI.getColleges(),
         studentAPI.getCities(),
+        // ensure your API has this endpoint; if not, you can derive batches from students or provide static options
+        studentAPI.getBatches?.() ?? Promise.resolve([]),
       ]);
       setColleges(collegeData || []);
       setCities(cityData || []);
+      setBatches(batchData || []);
     } catch (err) {
       console.error("Failed to load filter options:", err);
     }
@@ -84,8 +92,9 @@ export default function Directory() {
   };
 
   const clearFilters = () => {
-    setFilters({ search: "", college: "", city: "" });
+    setFilters({ search: "", college: "", city: "", batch: "" });
     setPage(1);
+    setMobileOpen(false);
   };
 
   const startIdx = total === 0 ? 0 : (page - 1) * pageSize;
@@ -107,13 +116,116 @@ export default function Directory() {
               <p className="text-sm text-slate-600">Find and connect with students across colleges.</p>
             </div>
           </div>
-
-          
         </div>
 
-        {/* Filters */}
+        {/* Filters container */}
         <div className="mb-6 bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Mobile header + toggle */}
+          <div className="md:hidden flex items-center justify-between mb-3">
+            <div>
+              <h3 className="text-sm font-semibold text-slate-800">Students</h3>
+              <p className="text-xs text-slate-500">Use filters to narrow results</p>
+            </div>
+
+            <button
+              onClick={() => setMobileOpen((s) => !s)}
+              aria-expanded={mobileOpen}
+              aria-controls="mobile-filters"
+              className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition"
+            >
+              Filters
+              <svg
+                className={`w-3 h-3 transform transition-transform ${mobileOpen ? "rotate-180" : "rotate-0"}`}
+                viewBox="0 0 20 20"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path d="M5 8L10 13L15 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+          </div>
+
+          {/* Mobile stacked filters */}
+          {mobileOpen && (
+            <div id="mobile-filters" className="md:hidden mb-4 space-y-3">
+              <div>
+                <label className="text-xs font-semibold text-gray-600 mb-1 block">Search</label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-3 text-gray-400" size={16} />
+                  <input
+                    type="text"
+                    placeholder="Name or email..."
+                    value={filters.search}
+                    onChange={(e) => handleFilterChange("search", e.target.value)}
+                    className="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-200 focus:ring-indigo-500 focus:border-indigo-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-gray-600 mb-1 block">College</label>
+                <select
+                  value={filters.college}
+                  onChange={(e) => handleFilterChange("college", e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:ring-indigo-500 focus:border-indigo-500"
+                >
+                  <option value="">All Colleges</option>
+                  {colleges.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-gray-600 mb-1 block">City</label>
+                <select
+                  value={filters.city}
+                  onChange={(e) => handleFilterChange("city", e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:ring-indigo-500 focus:border-indigo-500"
+                >
+                  <option value="">All Cities</option>
+                  {cities.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-gray-600 mb-1 block">Batch</label>
+                <select
+                  value={filters.batch}
+                  onChange={(e) => handleFilterChange("batch", e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:ring-indigo-500 focus:border-indigo-500"
+                >
+                  <option value="">All Batches</option>
+                  {batches.map((b) => (
+                    <option key={b} value={b}>
+                      {b}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <button
+                  onClick={() => {
+                    clearFilters();
+                  }}
+                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-indigo-100 text-indigo-700 border border-indigo-200 hover:bg-indigo-200 transition"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Clear Filters
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Desktop / tablet grid filters */}
+          <div className="hidden md:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             {/* Search */}
             <div>
               <label className="text-xs font-semibold text-gray-600 mb-1 block">Search</label>
@@ -163,8 +275,25 @@ export default function Directory() {
               </select>
             </div>
 
+            {/* Batch */}
+            <div>
+              <label className="text-xs font-semibold text-gray-600 mb-1 block">Batch</label>
+              <select
+                value={filters.batch}
+                onChange={(e) => handleFilterChange("batch", e.target.value)}
+                className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:ring-indigo-500 focus:border-indigo-500"
+              >
+                <option value="">All Batches</option>
+                {batches.map((b) => (
+                  <option key={b} value={b}>
+                    {b}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             {/* Clear */}
-            <div className="flex items-end">
+            <div className="flex items-end xl:items-center">
               <button
                 onClick={clearFilters}
                 className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-indigo-100 text-indigo-700 border border-indigo-200 hover:bg-indigo-200 transition"
@@ -252,8 +381,10 @@ export default function Directory() {
                 <article className="bg-gradient-to-br from-white via-white to-white rounded-2xl shadow-md overflow-hidden border border-gray-100 hover:shadow-lg transform transition hover:-translate-y-1 h-full flex flex-col">
                   {/* Card header with initials */}
                   <div className="flex items-center gap-4 p-5">
-                    <div className="w-14 h-14 rounded-xl flex-shrink-0 flex items-center justify-center text-white font-bold"
-                         style={{ background: `linear-gradient(135deg,#6366f1, #7c3aed)` }}>
+                    <div
+                      className="w-14 h-14 rounded-xl flex-shrink-0 flex items-center justify-center text-white font-bold"
+                      style={{ background: `linear-gradient(135deg,#6366f1, #7c3aed)` }}
+                    >
                       {getInitials(student)}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -276,21 +407,6 @@ export default function Directory() {
                       <InfoRow Icon={GraduationCap} label="Batch" value={student.batchYear || "—"} />
                     </div>
                   </div>
-
-                  {/* <div className="p-4 border-t border-gray-100 bg-white/80 flex items-center justify-between">
-                    <div className="text-xs text-slate-500">Member</div>
-                    <div className="flex items-center gap-2">
-                      <span className="inline-flex items-center text-xs px-2 py-1 rounded-md bg-indigo-50 text-indigo-700">
-                        <svg width="8" height="8" viewBox="0 0 8 8" className="mr-1">
-                          <circle cx="4" cy="4" r="4" fill="#4f46e5" />
-                        </svg>
-                        Active
-                      </span>
-                      <Link to={`/directory/${student.id}`} className="text-indigo-600 text-sm font-medium hover:underline">
-                        View
-                      </Link>
-                    </div>
-                  </div> */}
                 </article>
               </Link>
             ))}

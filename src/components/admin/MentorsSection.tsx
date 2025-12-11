@@ -4,10 +4,9 @@ interface MentorsSectionProps {
     mentors: any[];
     onBlockUser: (userId: string) => void;
     onUnblockUser: (userId: string) => void;
-    onAddMentor: () => void;
 }
 
-export default function MentorsSection({ mentors, onBlockUser, onUnblockUser, onAddMentor }: MentorsSectionProps) {
+export default function MentorsSection({ mentors, onBlockUser, onUnblockUser }: MentorsSectionProps) {
     const [searchQuery, setSearchQuery] = useState('');
     const [filterStatus, setFilterStatus] = useState('');
     const [loadingUserId, setLoadingUserId] = useState<string | null>(null);
@@ -155,7 +154,8 @@ export default function MentorsSection({ mentors, onBlockUser, onUnblockUser, on
                 </div>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden" id="mentors-table">
+            {/* --- DESKTOP: Table View --- */}
+            <div className="hidden lg:block bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden" id="mentors-table">
                 <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
                         <tr>
@@ -278,6 +278,60 @@ export default function MentorsSection({ mentors, onBlockUser, onUnblockUser, on
                         )}
                     </tbody>
                 </table>
+            </div>
+
+            {/* --- MOBILE: Card View --- */}
+            <div className="lg:hidden space-y-4">
+                {paginatedMentors.map((mentor) => (
+                    <div key={mentor.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+                        <div className="flex items-start justify-between mb-4">
+                            <div className="flex items-start gap-3">
+                                <div className="h-10 w-10 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-full flex items-center justify-center flex-shrink-0">
+                                    <span className="text-white font-semibold">{mentor.firstName?.[0]}{mentor.lastName?.[0]}</span>
+                                </div>
+                                <div>
+                                    <h3 className="font-semibold text-gray-900">{mentor.firstName} {mentor.lastName}</h3>
+                                    <p className="text-sm text-gray-500 break-all">{mentor.email}</p>
+                                </div>
+                            </div>
+
+                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium flex-shrink-0 ${mentor.status?.toUpperCase() === 'ACTIVE'
+                                ? 'bg-green-100 text-green-800' :
+                                mentor.status?.toUpperCase() === 'BLOCKED'
+                                    ? 'bg-red-100 text-red-800' :
+                                    'bg-yellow-100 text-yellow-800'
+                                }`}>
+                                {mentor.status}
+                            </span>
+                        </div>
+
+                        {/* Footer: Actions */}
+                        <div className="flex justify-end pt-3 border-t border-gray-50">
+                            {mentor.status?.toUpperCase() === 'BLOCKED' ? (
+                                <button
+                                    onClick={() => handleUnblockUser(mentor.id)}
+                                    disabled={loadingUserId === mentor.id}
+                                    className="w-full inline-flex justify-center items-center gap-2 px-4 py-2.5 bg-green-50 hover:bg-green-100 text-green-700 font-medium rounded-lg transition-colors border border-green-200"
+                                >
+                                    {loadingUserId === mentor.id ? 'Unblocking...' : 'Unblock User'}
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={() => handleBlockUser(mentor.id)}
+                                    disabled={loadingUserId === mentor.id}
+                                    className="w-full inline-flex justify-center items-center gap-2 px-4 py-2.5 bg-red-50 hover:bg-red-100 text-red-700 font-medium rounded-lg transition-colors border border-red-200"
+                                >
+                                    {loadingUserId === mentor.id ? 'Blocking...' : 'Block User'}
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                ))}
+                {paginatedMentors.length === 0 && (
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
+                        <p className="text-gray-500">No mentors found.</p>
+                    </div>
+                )}
             </div>
 
             {/* Pagination Controls */}

@@ -174,7 +174,7 @@ export default function StudentDashboard() {
             <div>
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-3">
                 <h2 className="text-2xl font-bold text-gray-900">My Announcements</h2>
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-indigo-100 text-indigo-700 rounded-full text-sm font-medium">
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-indigo-100 text-indigo-700 rounded-full text-sm font-medium self-start sm:self-auto">
                   <span className="h-2 w-2 rounded-full bg-indigo-600"></span>
                   {myAnnouncements.length} announcement{myAnnouncements.length !== 1 ? 's' : ''}
                 </div>
@@ -182,7 +182,7 @@ export default function StudentDashboard() {
 
               <div className="space-y-4">
                 {myAnnouncements.length === 0 ? (
-                  <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-16">
+                  <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 sm:p-16">
                     <div className="flex flex-col items-center justify-center text-center">
                       <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center mb-4">
                         <Megaphone className="h-8 w-8 text-indigo-600" />
@@ -195,32 +195,32 @@ export default function StudentDashboard() {
                   myAnnouncements.map((announcement) => (
                     <article
                       key={announcement.id}
-                      className="bg-white border border-gray-200 rounded-2xl p-6 shadow-md hover:shadow-lg transition-all duration-200"
+                      className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 shadow-md hover:shadow-lg transition-all duration-200 overflow-hidden"
                     >
                       {/* HEADER */}
                       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-3 gap-3">
-                        <h3 className="font-bold text-xl text-gray-900">{announcement.title}</h3>
+                        <h3 className="font-bold text-xl text-gray-900 break-words">{announcement.title}</h3>
 
                         {/* Status badge */}
                         <span
-                          className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium shrink-0 ${announcement.status?.toLowerCase() === 'approved'
-                              ? 'bg-green-100 text-green-800 ring-1 ring-green-600/20'
-                              : announcement.status?.toLowerCase() === 'rejected'
-                                ? 'bg-red-100 text-red-800 ring-1 ring-red-600/20'
-                                : 'bg-yellow-100 text-yellow-800 ring-1 ring-yellow-600/20'
+                          className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium shrink-0 self-start sm:self-auto ${announcement.status?.toLowerCase() === 'approved'
+                            ? 'bg-green-100 text-green-800 ring-1 ring-green-600/20'
+                            : announcement.status?.toLowerCase() === 'rejected'
+                              ? 'bg-red-100 text-red-800 ring-1 ring-red-600/20'
+                              : 'bg-yellow-100 text-yellow-800 ring-1 ring-yellow-600/20'
                             }`}
                         >
                           <span className={`mr-1.5 h-1.5 w-1.5 rounded-full ${announcement.status?.toLowerCase() === 'approved' ? 'bg-green-600' :
-                              announcement.status?.toLowerCase() === 'rejected' ? 'bg-red-600' :
-                                'bg-yellow-600'
+                            announcement.status?.toLowerCase() === 'rejected' ? 'bg-red-600' :
+                              'bg-yellow-600'
                             }`}></span>
                           {announcement.status}
                         </span>
                       </div>
 
                       {/* CONTENT */}
-                      <div className="bg-gray-50 rounded-lg p-4 mb-3 border border-gray-100">
-                        <p className="text-gray-800 leading-relaxed whitespace-pre-wrap">{announcement.content}</p>
+                      <div className="bg-gray-50 rounded-lg p-4 mb-3 border border-gray-100 overflow-x-auto">
+                        <p className="text-gray-800 leading-relaxed whitespace-pre-wrap break-words">{announcement.content}</p>
                       </div>
 
                       {/* REJECTION REMARKS */}
@@ -230,7 +230,7 @@ export default function StudentDashboard() {
                             <AlertCircle className="h-4 w-4 text-red-600 flex-shrink-0 mt-0.5" />
                             <div>
                               <p className="text-sm font-medium text-red-800">Rejection Feedback</p>
-                              <p className="text-sm text-red-700 mt-1">{announcement.rejectionRemarks}</p>
+                              <p className="text-sm text-red-700 mt-1 break-words">{announcement.rejectionRemarks}</p>
                             </div>
                           </div>
                         </div>
@@ -248,32 +248,7 @@ export default function StudentDashboard() {
                 )}
               </div>
 
-              {/* Profile summary under announcements */}
-              <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="flex items-center gap-2">
-                  <Building2 className="w-5 h-5 text-gray-500" />
-                  <div>
-                    <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">College</div>
-                    <div className="text-sm text-gray-700">{studentProfile?.profile?.college || '—'}</div>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <MapPin className="w-5 h-5 text-gray-500" />
-                  <div>
-                    <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">City</div>
-                    <div className="text-sm text-gray-700">{studentProfile?.profile?.city || '—'}</div>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <GraduationCap className="w-5 h-5 text-gray-500" />
-                  <div>
-                    <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">Batch</div>
-                    <div className="text-sm text-gray-700">{studentProfile?.profile?.batchYear || '—'}</div>
-                  </div>
-                </div>
-              </div>
+              
             </div>
           </div>
 
@@ -281,9 +256,9 @@ export default function StudentDashboard() {
           <aside className="space-y-6">
             {/* Mentor card */}
             {mentor && (
-              <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-md">
+              <div className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 shadow-md">
                 <div className="flex items-center gap-2 mb-4">
-                  <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+                  <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center flex-shrink-0">
                     <UserCheck className="w-5 h-5 text-white" />
                   </div>
                   <h3 className="font-bold text-lg text-gray-900">Your Mentor</h3>
@@ -291,8 +266,8 @@ export default function StudentDashboard() {
 
                 <div className="space-y-3">
                   <div>
-                    <p className="font-semibold text-gray-900 text-lg">{mentor.firstName} {mentor.lastName}</p>
-                    <p className="text-sm text-gray-600 mt-1">{mentor.email}</p>
+                    <p className="font-semibold text-gray-900 text-lg break-words">{mentor.firstName} {mentor.lastName}</p>
+                    <p className="text-sm text-gray-600 mt-1 break-all">{mentor.email}</p>
                   </div>
 
                   <Link
@@ -307,11 +282,11 @@ export default function StudentDashboard() {
             )}
 
             {/* Profile card */}
-            <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-md">
+            <div className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 shadow-md">
               <h3 className="font-bold text-lg text-gray-900 mb-4">Your Profile</h3>
 
               <div className="space-y-3">
-                <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg overflow-hidden">
                   <Building2 className="w-5 h-5 text-indigo-600 flex-shrink-0 mt-0.5" />
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">College</p>
@@ -319,15 +294,15 @@ export default function StudentDashboard() {
                   </div>
                 </div>
 
-                <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg overflow-hidden">
                   <MapPin className="w-5 h-5 text-indigo-600 flex-shrink-0 mt-0.5" />
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">City</p>
-                    <p className="text-sm font-medium text-gray-900 mt-1">{studentProfile?.profile?.city || '—'}</p>
+                    <p className="text-sm font-medium text-gray-900 mt-1 break-words">{studentProfile?.profile?.city || '—'}</p>
                   </div>
                 </div>
 
-                <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg overflow-hidden">
                   <GraduationCap className="w-5 h-5 text-indigo-600 flex-shrink-0 mt-0.5" />
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Batch</p>

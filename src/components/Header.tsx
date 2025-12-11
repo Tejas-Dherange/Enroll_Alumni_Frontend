@@ -384,56 +384,175 @@ export default function Header() {
             </div>
 
             {/* Mobile Menu Panel */}
+            {/* ===== MOBILE MENU: OVERLAY + LEFT SLIDE PANEL ===== */}
+
+{/* Dark overlay */}
+{showMobileMenu && (
+  <div
+    className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm transition-opacity duration-300"
+    onClick={() => setShowMobileMenu(false)}
+  />
+)}
+
+{/* Sliding Panel (LEFT) */}
+<div
+  className={`md:hidden fixed top-20 left-0 z-50 h-[calc(100vh-5rem)] w-full max-w-md bg-white shadow-xl border-r border-gray-200
+      transform transition-transform duration-300 ease-in-out
+      ${showMobileMenu ? 'translate-x-0' : '-translate-x-full'}
+  `}
+  role="dialog"
+  aria-modal="true"
+>
+  <div className="h-full overflow-y-auto px-4 py-6">
+
+    {/* ANIMATED MENU WRAPPER */}
+    <div
+      className={`space-y-1 transform transition-all duration-500 ${
+        showMobileMenu ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-5'
+      }`}
+      style={{ transitionDelay: '100ms' }}
+    >
+      {isAuthenticated ? (
+        <>
+          {/* ITEM 1 */}
+          <div
+            className={`transition-all duration-500 ${
+              showMobileMenu ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
+            }`}
+            style={{ transitionDelay: '150ms' }}
+          >
+            <MobileNavLink to={getDashboardLink()} icon={LayoutDashboard}>
+              Dashboard
+            </MobileNavLink>
+          </div>
+
+          {/* ITEM 2 */}
+          <div
+            className={`transition-all duration-500 ${
+              showMobileMenu ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
+            }`}
+            style={{ transitionDelay: '200ms' }}
+          >
+            <MobileNavLink to="/announcements" icon={Rss}>
+              Feed
+            </MobileNavLink>
+          </div>
+
+          {/* ITEM 3 – STUDENTS ONLY */}
+          {user?.role?.toUpperCase() === 'STUDENT' && (
             <div
-                className={`md:hidden fixed inset-0 z-40 bg-white transform transition-transform duration-300 ease-in-out ${showMobileMenu ? 'translate-x-0' : 'translate-x-full'
-                    }`}
-                style={{ top: '80px' }} // Below the header
+              className={`transition-all duration-500 ${
+                showMobileMenu ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
+              }`}
+              style={{ transitionDelay: '250ms' }}
             >
-                <div className="flex flex-col h-full bg-white divide-y divide-gray-100">
-                    <div className="px-4 py-6 space-y-2 overflow-y-auto pb-20">
-                        {isAuthenticated ? (
-                            <>
-                                <MobileNavLink to={getDashboardLink()} icon={LayoutDashboard}>Dashboard</MobileNavLink>
-                                <MobileNavLink to="/announcements" icon={Rss}>Feed</MobileNavLink>
-                                {user?.role?.toUpperCase() === 'STUDENT' && (
-                                    <MobileNavLink to="/messages" icon={MessageSquare}>Messages</MobileNavLink>
-                                )}
-                                {user?.role?.toUpperCase() !== 'ADMIN' && user?.role?.toUpperCase() !== 'MENTOR' && (
-                                    <MobileNavLink to="/directory" icon={Users}>Directory</MobileNavLink>
-                                )}
-
-                                <div className="mt-8 pt-8 border-t border-gray-100">
-                                    <h4 className="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Account</h4>
-
-                                    <div className="px-4 flex items-center space-x-3 mb-6 bg-gray-50 p-4 rounded-xl mx-2">
-                                        <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-semibold text-sm">
-                                            {getInitials()}
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-semibold text-gray-900 truncate">
-                                                {user?.firstName} {user?.lastName}
-                                            </p>
-                                            <p className="text-xs text-gray-500 truncate">{user?.email}</p>
-                                        </div>
-                                    </div>
-
-                                    <MobileNavLink icon={LogOut} onClick={handleLogout}>
-                                        Sign out
-                                    </MobileNavLink>
-                                </div>
-                            </>
-                        ) : (
-                            <>
-                                <MobileNavLink icon={Info} onClick={() => navigateToSection("about")}>About</MobileNavLink>
-                                <MobileNavLink icon={Zap} onClick={() => navigateToSection("features")}>Features</MobileNavLink>
-                                <hr className="border-gray-100 my-4" />
-                                <MobileNavLink to="/login" icon={LogIn}>Log in</MobileNavLink>
-                                <MobileNavLink to="/signup" icon={UserPlus}>Sign Up</MobileNavLink>
-                            </>
-                        )}
-                    </div>
-                </div>
+              <MobileNavLink to="/messages" icon={MessageSquare}>
+                Messages
+              </MobileNavLink>
             </div>
+          )}
+
+          {/* ITEM 4 – Directory */}
+          {user?.role?.toUpperCase() !== 'ADMIN' &&
+            user?.role?.toUpperCase() !== 'MENTOR' && (
+              <div
+                className={`transition-all duration-500 ${
+                  showMobileMenu ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
+                }`}
+                style={{ transitionDelay: '300ms' }}
+              >
+                <MobileNavLink to="/directory" icon={Users}>
+                  Directory
+                </MobileNavLink>
+              </div>
+            )}
+
+          {/* ACCOUNT SECTION */}
+          <div
+            className={`mt-6 pt-4 border-t border-gray-200 transition-all duration-500 ${
+              showMobileMenu ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
+            }`}
+            style={{ transitionDelay: '350ms' }}
+          >
+            <h4 className="px-1 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+              Account
+            </h4>
+
+            {/* USER CARD */}
+            <div className="flex items-center space-x-3 mb-4 bg-gray-50 p-3 rounded-xl border border-gray-100">
+              <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-semibold text-sm shadow-sm">
+                {getInitials()}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-gray-900 truncate">
+                  {user?.firstName} {user?.lastName}
+                </p>
+                <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+              </div>
+            </div>
+
+            <MobileNavLink icon={LogOut} onClick={handleLogout}>
+              Sign out
+            </MobileNavLink>
+          </div>
+        </>
+      ) : (
+        <>
+          {/* PUBLIC - ITEM 1 */}
+          <div
+            className={`transition-all duration-500 ${
+              showMobileMenu ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
+            }`}
+            style={{ transitionDelay: '150ms' }}
+          >
+            <MobileNavLink icon={Info} onClick={() => navigateToSection('about')}>
+              About
+            </MobileNavLink>
+          </div>
+
+          {/* PUBLIC - ITEM 2 */}
+          <div
+            className={`transition-all duration-500 ${
+              showMobileMenu ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
+            }`}
+            style={{ transitionDelay: '200ms' }}
+          >
+            <MobileNavLink icon={Zap} onClick={() => navigateToSection('features')}>
+              Features
+            </MobileNavLink>
+          </div>
+
+          <hr className="border-gray-200 my-4" />
+
+          {/* LOGIN */}
+          <div
+            className={`transition-all duration-500 ${
+              showMobileMenu ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
+            }`}
+            style={{ transitionDelay: '250ms' }}
+          >
+            <MobileNavLink to="/login" icon={LogIn}>
+              Log In
+            </MobileNavLink>
+          </div>
+
+          {/* SIGN UP */}
+          <div
+            className={`transition-all duration-500 ${
+              showMobileMenu ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
+            }`}
+            style={{ transitionDelay: '300ms' }}
+          >
+            <MobileNavLink to="/signup" icon={UserPlus}>
+              Sign Up
+            </MobileNavLink>
+          </div>
+        </>
+      )}
+    </div>
+  </div>
+</div>
+
         </header>
     );
 }

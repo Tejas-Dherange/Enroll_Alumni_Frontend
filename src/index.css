@@ -2,8 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
-html, body, #root {
+html,
+body,
+#root {
   height: 100%;
+  scroll-behavior: smooth;
 }
 
 :root {
@@ -95,7 +98,8 @@ code {
 /* long track */
 .testi-marquee-track {
   display: flex;
-  gap: 32px; /* bigger spacing between cards */
+  gap: 32px;
+  /* bigger spacing between cards */
   white-space: nowrap;
   will-change: transform;
   animation: marquee-scroll linear infinite;
@@ -106,7 +110,8 @@ code {
 
 /* BIGGER CARDS */
 .testi-card {
-  flex: 0 0 480px;  /* ← increased width */
+  flex: 0 0 480px;
+  /* ← increased width */
   min-width: 420px;
   max-width: 520px;
   display: inline-block;
@@ -115,25 +120,31 @@ code {
 
 /* marquee animation */
 @keyframes marquee-scroll {
-  0%   { transform: translateX(0%); }
-  100% { transform: translateX(-50%); }
+  0% {
+    transform: translateX(0%);
+  }
+
+  100% {
+    transform: translateX(-50%);
+  }
 }
 
 /* ---------- card styling ---------- */
 .card-blockquote {
   position: relative;
   background: white;
-  border-radius: 22px;     /* smoother edges */
+  border-radius: 22px;
+  /* smoother edges */
   padding: 28px 30px;
-  border: 1px solid rgba(99,102,241,0.10);
+  border: 1px solid rgba(99, 102, 241, 0.10);
   min-height: 260px;
-  box-shadow: 0 14px 36px rgba(0,0,0,0.08);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.08);
   transition: transform .25s ease, box-shadow .25s ease;
 }
 
 .testi-card:hover .card-blockquote {
   transform: translateY(-8px);
-  box-shadow: 0 24px 50px rgba(0,0,0,0.12);
+  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.12);
 }
 
 /* quote text (bigger, readable) */
@@ -152,15 +163,16 @@ code {
   left: 22px;
   top: 14px;
   font-size: 46px;
-  color: rgba(79,70,229,0.10);
+  color: rgba(79, 70, 229, 0.10);
   font-weight: 700;
 }
+
 .quote-mark-right {
   position: absolute;
   right: 22px;
   bottom: 14px;
   font-size: 32px;
-  color: rgba(79,70,229,0.10);
+  color: rgba(79, 70, 229, 0.10);
 }
 
 /* divider under text */
@@ -190,7 +202,8 @@ code {
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0; /* NEVER shrink avatar */
+  flex-shrink: 0;
+  /* NEVER shrink avatar */
 }
 
 /* Avatar image (supports any real image) */
@@ -198,10 +211,14 @@ code {
   width: 64px;
   height: 64px;
   border-radius: 999px;
-  object-fit: cover;          /* IMPORTANT: fixes all real images */
-  object-position: center;    /* keeps face centered */
-  background: #eaeaea;        /* fallback bg */
-  border: 3px solid #ffffff;  /* clean white border */
+  object-fit: cover;
+  /* IMPORTANT: fixes all real images */
+  object-position: center;
+  /* keeps face centered */
+  background: #eaeaea;
+  /* fallback bg */
+  border: 3px solid #ffffff;
+  /* clean white border */
   display: block;
 }
 
@@ -210,7 +227,8 @@ code {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  min-width: 0;               /* crucial for proper wrapping */
+  min-width: 0;
+  /* crucial for proper wrapping */
 }
 
 .author-name {
@@ -228,8 +246,10 @@ code {
   line-height: 1.25;
   white-space: normal;
   word-break: break-word;
-  max-width: 260px;           /* keeps long college names clean */
+  max-width: 260px;
+  /* keeps long college names clean */
 }
+
 /* ---------- edge fade (NO BLUR) ---------- */
 .edge-fade {
   position: absolute;
@@ -245,6 +265,7 @@ code {
   right: 0;
   background: linear-gradient(to left, white 0%, transparent 100%);
 }
+
 .edge-fade-left {
   left: 0;
 }
@@ -272,7 +293,15 @@ code {
 }
 
 @keyframes floatQuote {
-  0% { transform: translateY(0); }
-  50% { transform: translateY(-6px); }
-  100% { transform: translateY(0); }
+  0% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-6px);
+  }
+
+  100% {
+    transform: translateY(0);
+  }
 }

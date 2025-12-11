@@ -209,7 +209,8 @@ export default function StudentsSection({ students, mentors, onBlockUser, onUnbl
                 </div>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden" id="students-table">
+            {/* --- DESKTOP: Table View --- */}
+            <div className="hidden lg:block bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden" id="students-table">
                 <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
                         <tr>
@@ -363,6 +364,79 @@ export default function StudentsSection({ students, mentors, onBlockUser, onUnbl
                         )}
                     </tbody>
                 </table>
+            </div>
+
+            {/* --- MOBILE: Card View --- */}
+            <div className="lg:hidden space-y-4">
+                {paginatedStudents.map((student) => (
+                    <div key={student.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+                        {/* Header: Avatar, Name, Status */}
+                        <div className="flex items-start justify-between mb-4">
+                            <div className="flex items-start gap-3">
+                                <div className="h-10 w-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
+                                    <span className="text-white font-semibold">{student.firstName?.[0]}{student.lastName?.[0]}</span>
+                                </div>
+                                <div>
+                                    <h3 className="font-semibold text-gray-900">{student.firstName} {student.lastName}</h3>
+                                    <p className="text-sm text-gray-500 break-all">{student.email}</p>
+                                    <span className="text-xs text-gray-400">Batch {student.batchYear}</span>
+                                </div>
+                            </div>
+
+                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium flex-shrink-0 ${student.status?.toUpperCase() === 'ACTIVE'
+                                ? 'bg-green-100 text-green-800' :
+                                student.status?.toUpperCase() === 'BLOCKED'
+                                    ? 'bg-red-100 text-red-800' :
+                                    'bg-yellow-100 text-yellow-800'
+                                }`}>
+                                {student.status}
+                            </span>
+                        </div>
+
+                        {/* Body: Key details */}
+                        <div className="grid grid-cols-2 gap-y-3 text-sm text-gray-600 mb-4 border-t border-b border-gray-50 py-3">
+                            <div className="col-span-2">
+                                <span className="block text-xs font-medium text-gray-400 uppercase">College</span>
+                                <span className="text-gray-900">{student.college}</span>
+                            </div>
+                            <div>
+                                <span className="block text-xs font-medium text-gray-400 uppercase">City</span>
+                                <span className="text-gray-900">{student.city || '-'}</span>
+                            </div>
+                            <div>
+                                <span className="block text-xs font-medium text-gray-400 uppercase">Mentor</span>
+                                <span className="text-gray-900">{student.mentor?.name || 'Not assigned'}</span>
+                            </div>
+                        </div>
+
+                        {/* Footer: Actions */}
+                        <div className="flex justify-end">
+                            {student.status?.toUpperCase() === 'BLOCKED' ? (
+                                <button
+                                    onClick={() => handleUnblockUser(student.id)}
+                                    disabled={loadingUserId === student.id}
+                                    className="w-full inline-flex justify-center items-center gap-2 px-4 py-2.5 bg-green-50 hover:bg-green-100 text-green-700 font-medium rounded-lg transition-colors border border-green-200"
+                                >
+                                    {loadingUserId === student.id ? 'Unblocking...' : 'Unblock User'}
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={() => handleBlockUser(student.id)}
+                                    disabled={loadingUserId === student.id}
+                                    className="w-full inline-flex justify-center items-center gap-2 px-4 py-2.5 bg-red-50 hover:bg-red-100 text-red-700 font-medium rounded-lg transition-colors border border-red-200"
+                                >
+                                    {loadingUserId === student.id ? 'Blocking...' : 'Block User'}
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                ))}
+
+                {paginatedStudents.length === 0 && (
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
+                        <p className="text-gray-500">No students found.</p>
+                    </div>
+                )}
             </div>
 
             {/* Pagination Controls */}

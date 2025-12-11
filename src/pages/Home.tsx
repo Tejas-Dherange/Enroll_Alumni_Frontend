@@ -68,9 +68,9 @@ export default function Home() {
 
       {/* MAIN CONTENT - on cream background */}
       <div className="bg-[#F7F4EC] relative z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+        <div className="max-w-7xl mx-auto px-2 sm:px-2 lg:px-2 py-2 sm:py-2 lg:py-2">
           {/* CTA Section */}
-          <div className="text-center py-8 sm:py-12 lg:py-16">
+          <div className="text-center py-4 sm:py-6 lg:py-8">
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-2 sm:mb-3 tracking-tight">
               YOUR <span className="text-indigo-600">NETWORK</span> IS WAITING
             </h2>
