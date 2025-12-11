@@ -7,6 +7,7 @@ interface FormData {
   password: string;
   firstName: string;
   lastName: string;
+  mobileNumber: string;
   college: string;
   city: string;
   batchYear: number;
@@ -18,6 +19,7 @@ export default function Signup() {
     password: '',
     firstName: '',
     lastName: '',
+    mobileNumber: '',
     college: '',
     city: '',
     batchYear: new Date().getFullYear(),
@@ -80,6 +82,11 @@ export default function Signup() {
       <div className="field">
         <label className="label" htmlFor="password">Password</label>
         <input id="password" name="password" type="password" required minLength={8} className="input" value={formData.password} onChange={handleChange} />
+      </div>
+
+      <div className="field">
+        <label className="label" htmlFor="mobileNumber">Mobile Number</label>
+        <input id="mobileNumber" name="mobileNumber" type="tel" required className="input" value={formData.mobileNumber} onChange={handleChange} placeholder="e.g., +1234567890" />
       </div>
 
       <div className="field">
