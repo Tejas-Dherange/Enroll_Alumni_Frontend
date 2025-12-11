@@ -24,6 +24,7 @@ import Messages from './pages/Messages';
 import Directory from './pages/Directory';
 import About from './pages/About';
 import Features from './pages/Features';
+import AuthPage from './pages/AuthPage';
 
 function App() {
     return (
@@ -35,8 +36,8 @@ function App() {
                         <Route path="/" element={<Home />} />
                         <Route path="/about" element={<About />} />
                         <Route path="/features" element={<Features />} />
-                        <Route path="/login" element={<Login />} />
-                        <Route path="/signup" element={<Signup />} />
+                        <Route path="/login" element={<AuthPage initialTab="login" />} />
+<Route path="/signup" element={<AuthPage initialTab="signup" />} />
                         <Route path="/verify-email" element={<VerifyEmail />} />
                         <Route path="/forgot-password" element={<ForgotPassword />} />
                         <Route path="/reset-password" element={<ResetPassword />} />

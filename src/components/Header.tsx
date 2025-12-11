@@ -142,8 +142,8 @@ export default function Header() {
                 to={to}
                 onClick={onClick}
                 className={`flex items-center space-x-2 px-3 py-2 rounded-md transition-all duration-200 ${isActive
-                        ? 'text-indigo-600 bg-indigo-50 font-medium'
-                        : 'text-gray-600 hover:text-indigo-600 hover:bg-gray-50'
+                    ? 'text-indigo-600 bg-indigo-50 font-medium'
+                    : 'text-gray-600 hover:text-indigo-600 hover:bg-gray-50'
                     }`}
             >
                 {Icon && <Icon className="w-4 h-4" />}
@@ -164,8 +164,8 @@ export default function Header() {
             <Wrapper
                 {...props}
                 className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 ${isActive
-                        ? 'bg-indigo-50 text-indigo-700 font-medium'
-                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                    ? 'bg-indigo-50 text-indigo-700 font-medium'
+                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                     }`}
             >
                 <div className={`p-2 rounded-lg ${isActive ? 'bg-white shadow-sm' : 'bg-transparent'}`}>
@@ -179,8 +179,8 @@ export default function Header() {
     return (
         <header
             className={`sticky top-0 z-50 w-full transition-all duration-300 ${isScrolled || showMobileMenu
-                    ? 'bg-white/90 backdrop-blur-md shadow-sm border-b border-gray-200/50'
-                    : 'bg-white border-b border-transparent'
+                ? 'bg-white/90 backdrop-blur-md shadow-sm border-b border-gray-200/50'
+                : 'bg-white border-b border-transparent'
                 }`}
         >
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -212,7 +212,9 @@ export default function Header() {
                                     <NavLink to="/messages" icon={MessageSquare}>Messages</NavLink>
                                 )}
 
-                                <NavLink to="/directory" icon={Users}>Directory</NavLink>
+                                {user?.role?.toUpperCase() !== 'ADMIN' && user?.role?.toUpperCase() !== 'MENTOR' && (
+                                    <NavLink to="/directory" icon={Users}>Directory</NavLink>
+                                )}
 
                                 <div className="ml-4 flex items-center space-x-4 pl-4 border-l border-gray-200">
                                     {/* Notifications */}
@@ -396,7 +398,9 @@ export default function Header() {
                                 {user?.role?.toUpperCase() === 'STUDENT' && (
                                     <MobileNavLink to="/messages" icon={MessageSquare}>Messages</MobileNavLink>
                                 )}
-                                <MobileNavLink to="/directory" icon={Users}>Directory</MobileNavLink>
+                                {user?.role?.toUpperCase() !== 'ADMIN' && user?.role?.toUpperCase() !== 'MENTOR' && (
+                                    <MobileNavLink to="/directory" icon={Users}>Directory</MobileNavLink>
+                                )}
 
                                 <div className="mt-8 pt-8 border-t border-gray-100">
                                     <h4 className="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Account</h4>

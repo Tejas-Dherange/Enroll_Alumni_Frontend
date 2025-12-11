@@ -1,18 +1,16 @@
-// TestimonialsCarousel.tsx
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 
 export type Testimonial = {
   id: string | number;
   quote: string;
   name: string;
   meta?: string;
-  avatar?: string; // url to avatar image
+  avatar?: string;
 };
 
 export interface TestimonialsCarouselProps {
-  testimonials?: Testimonial[]; // optional, will use built-in sample data if not provided
-  interval?: number; // autoplay interval in ms
-  startIndex?: number;
+  testimonials?: Testimonial[];
+  speedPerCard?: number; // seconds per card (lower -> faster)
   className?: string;
 }
 
@@ -20,208 +18,157 @@ const defaultTestimonials: Testimonial[] = [
   {
     id: 1,
     quote:
-      "I am incredibly thankful to Enroll Engineer for guiding me through the challenging process of choosing the right college and navigating the CAP rounds. Their team was highly professional, knowledgeable, and always available to resolve my queries.",
-    name: "Gitesh Patil",
-    meta: "Premium Batch Student, SPIT Mumbai",
+      "I am Yash Jadhav, and I sincerely thank you for your proper guidance and constant support throughout my admission journey. With your help, I secured admission into VJTI – Civil Engineering. Your timely advice, motivation, and expert guidance made this possible. I am truly grateful and wish the entire Enroll Engineering team continued success in helping many more students achieve their dreams.",
+    name: "Yash Jadhav",
+    meta: "Premium Batch Student, VJTI Mumbai",
     avatar: "",
   },
   {
     id: 2,
     quote:
-      "EnrollEngineer is best counseling platform i have ever seen, they show me the reality while others confused you for admisison process. They helped me to get admission best college from beginning till last. Because of EnrollEngineer team it got possible for me to get admission in Best College of Pune for B.Tech CSE",
-    name: "Om Pachpande",
-    meta: "Premium Batch Student, DES Pune University",
+      "At time of CET cap round Enroll Enginners help me alot. Because of their guidance and personal attention to individual I am able to get Good College in first Cap round itself. Thank you Enroll Enginners.",
+    name: "Asad Pathan",
+    meta: "Standard Batch Student, COEP Pune",
     avatar: "",
   },
   {
     id: 3,
     quote:
-      "My name is Gayatri Gaikwad, EnrollEngineer is very helpful for admission. Your team is very good at helping students make their careers in right way. Doubts from team are becoming very clear ,all doubts clear properly.",
-    name: "Gayatri Gaikwad",
-    meta: "Standard Batch Student, Zeal COE&R Pune",
+      "My experience about EnrollEngineer team - very supportive team work and good guidance about admission and also career...and EnrollEngineer team is always available for students issues related admission and college. Thank you EnrollEngineer for all your support and guidance...!!",
+    name: "Rutuja Kale",
+    meta: "Premium Batch Student, Sinhgad College of Engineering, Vadgaon",
     avatar: "",
   },
   {
     id: 4,
     quote:
-      "EnrollEngineer made my admission process smooth and hassle-free. With their expert guidance, I secured admission to PICT for Computer Science. Their team was always supportive, answering all my questions and helping me make the right decision. I’m really thankful for their efforts and highly recommend their services to other students!",
-    name: "Om Kulte",
-    meta: "Premium Batch Student, PICT Pune",
+      "This achievement wouldn’t have been possible without your timely advice, motivation, and expert guidance. I am truly grateful for your efforts and wish the entire Enroll Engineering team continued success in guiding many more students like me toward their dreams.",
+    name: "Komal Wakade",
+    meta: "Premium Batch Student, Dr.DY Patil Institute of Technology-Pimpri",
     avatar: "",
   },
   {
     id: 5,
     quote:
-      "EnrollEngineer provided amazing support throughout my admission journey, guiding me every step of the way. They helped me secure admission to VIT for CSE (Software) during the spot round. Their dedication and expert advice made the process stress-free. I’m truly grateful for their assistance and highly recommend them!",
-    name: "Tanmay Patil",
-    meta: "Premium Batch Student, VIT Pune",
+      "I had a very good experience with my counselor during my engineering admission process. They guided me step by step, explained the CAP rounds clearly, and helped me shortlist the best colleges according to my percentile. Their advice made the process smooth and stress-free. I really appreciate their patience and support.",
+    name: "Akshata Birdar",
+    meta: "Premium Batch Student, Sinhgad Academy of Engineering Kondhwa(Bk.)",
     avatar: "",
   },
 ];
 
 export default function TestimonialsCarousel({
   testimonials = defaultTestimonials,
-  interval = 5000,
-  startIndex = 0,
+  speedPerCard = 6,
   className = "",
 }: TestimonialsCarouselProps) {
-  const [index, setIndex] = useState<number>(() => {
-    const safe = Math.max(0, Math.min(startIndex, testimonials.length - 1));
-    return safe;
-  });
-  const [paused, setPaused] = useState<boolean>(false);
-  const timerRef = useRef<number | null>(null);
-  const total = testimonials.length;
+  const items = testimonials;
+  const total = items.length;
+  const [hovering, setHovering] = useState(false);
+  const [manualPause, setManualPause] = useState(false);
 
-  useEffect(() => {
-    // autoplay
-    if (!paused && total > 1) {
-      timerRef.current = window.setInterval(() => {
-        setIndex((prev) => (prev + 1) % total);
-      }, interval);
-    }
-    return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
-    };
-  }, [paused, interval, total]);
+  // duration in seconds for the entire duplicated track to scroll - prevents extremely fast by min cap
+  const duration = Math.max(8, total * speedPerCard);
 
-  useEffect(() => {
-    // if testimonials length changes, clamp index
-    if (index >= total) {
-      setIndex(total - 1 >= 0 ? total - 1 : 0);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [total]);
+  // duplicate items for seamless loop
+  const doubled = useMemo(() => {
+    if (total <= 1) return Array.from({ length: 6 }).flatMap(() => items);
+    return [...items, ...items];
+  }, [items, total]);
 
-  const goTo = (i: number) => {
-    const normalized = ((i % total) + total) % total;
-    setIndex(normalized);
-  };
+  const paused = hovering || manualPause;
 
-  const prev = () => goTo(index - 1);
-  const next = () => goTo(index + 1);
-
-  if (total === 0) return null;
+  if (!items || items.length === 0) return null;
 
   return (
-    <section
-      className={`w-full bg-transparent py-12 ${className}`}
-      aria-label="Alumni testimonials"
-    >
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Title */}
+    <section className={`relative overflow-hidden ${className}`} aria-label="Alumni testimonials - continuous carousel">
+      {/* Title */}
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mb-6">
         <div className="text-center">
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900">
-            What Our Students Say
-          </h2>
-          <div className="w-20 h-1 bg-indigo-500 rounded-full mx-auto mt-2"></div>
-          <p className="mt-2 text-gray-600 max-w-2xl mx-auto">
-            Don't just take our word for it. Here's what our students have to say
-            about our guidance.
-          </p>
+          <h3 className="text-2xl md:text-3xl font-extrabold text-gray-900">What Our Students Say</h3>
+          <p className="mt-2 text-gray-600 max-w-2xl mx-auto">Real student experiences from our batches.</p>
         </div>
+      </div>
 
-        {/* Carousel */}
+      {/* Marquee viewport */}
+      <div
+        className="testi-marquee-viewport relative z-10"
+        onMouseEnter={() => setHovering(true)}
+        onMouseLeave={() => setHovering(false)}
+        onFocus={() => setHovering(true)}
+        onBlur={() => setHovering(false)}
+        style={
+          {
+            ["--marquee-duration" as any]: `${duration}s`,
+            ["--marquee-paused" as any]: paused ? "paused" : "running",
+          } as React.CSSProperties
+        }
+      >
+        {/* left and right soft fades (optional) */}
+        <div className="edge-fade edge-fade-left pointer-events-none" />
+        <div className="edge-fade edge-fade-right pointer-events-none" />
+
+        {/* track */}
         <div
-          className="mt-10 relative"
-          onMouseEnter={() => setPaused(true)}
-          onMouseLeave={() => setPaused(false)}
+          className="testi-marquee-track"
+          onClick={() => {
+            // quick manual pause when user clicks a card so they can read
+            setManualPause(true);
+            window.setTimeout(() => setManualPause(false), 2000);
+          }}
         >
-          {/* Card viewport */}
-          <div className="flex items-center justify-center">
-            <div className="w-full sm:w-11/12 lg:w-10/12">
-              {/* Each testimonial is absolutely positioned and animated via opacity/translate */}
-              <div className="relative h-64 sm:h-56 md:h-72">
-                {testimonials.map((t, i) => {
-                  const active = i === index;
-                  return (
-                    <article
-                      key={t.id}
-                      className={`absolute inset-0 transition-all duration-700 ease-in-out
-                        ${active ? "opacity-100 translate-y-0 z-10" : "opacity-0 -translate-y-6 z-0"}
-                      `}
-                      aria-hidden={!active}
-                    >
-                      <div className="h-full flex flex-col items-center justify-center">
-                        <blockquote className="bg-white w-full rounded-2xl p-6 sm:p-10 shadow-xl relative">
-                          {/* Decorative left quote */}
-                          <div className="absolute left-6 top-6 text-indigo-100 text-6xl select-none pointer-events-none">
-                            “
-                          </div>
+          {doubled.map((t, i) => {
+            const keyId = `${t.id ?? i}-${i}`;
+            return (
+              <article key={keyId} className="testi-card inline-block align-top" role="article" aria-label={`Testimonial by ${t.name}`}>
+                <blockquote className="card-blockquote flex flex-col justify-between h-full bg-white rounded-2xl p-8 shadow-md border border-indigo-50 relative">
+                  {/* top: quote */}
+                  <div>
+                    <div className="float-quote float-left">“</div>
 
-                          <p className="text-base sm:text-xl leading-relaxed text-gray-700 text-center">
-                            {t.quote}
-                          </p>
 
-                          <footer className="mt-6 sm:mt-8 flex items-center justify-center space-x-4">
-                            <img
-                              src={t.avatar}
-                              alt={`${t.name} avatar`}
-                              className="w-14 h-14 rounded-full border-2 border-indigo-100 object-cover"
-                            />
-                            <div className="text-center">
-                              <div className="font-semibold text-gray-900">{t.name}</div>
-                              {t.meta && (
-                                <div className="text-sm text-gray-500">{t.meta}</div>
-                              )}
-                            </div>
-                          </footer>
+                    {/* IMPORTANT: the text container must allow wrapping; use whitespace-normal and break-words */}
+                    <p className="quote-text text-gray-700 text-base leading-relaxed mt-3 mb-4 whitespace-normal break-words">
+                      {t.quote}
+                    </p>
 
-                          {/* Decorative right quote */}
-                          <div className="absolute right-6 bottom-6 text-indigo-100 text-4xl select-none pointer-events-none">
-                            ”
-                          </div>
-                        </blockquote>
-                      </div>
-                    </article>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
+                    <div className="divider w-20 h-1.5 bg-gradient-to-r from-indigo-400 to-indigo-600 rounded-full mx-auto my-2" />
+                  </div>
 
-          {/* Prev/Next controls */}
-          <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex items-center justify-between px-4 pointer-events-none">
-            <button
-              type="button"
-              onClick={prev}
-              className="pointer-events-auto bg-white/80 backdrop-blur-sm hover:bg-white text-gray-700 rounded-full p-2 shadow"
-              aria-label="Previous testimonial"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
+                  {/* footer: avatar + author */}
+                  <footer className="card-footer mt-4">
+                    <div className="avatar-container">
+                      <img
+                        src={
+                          t.avatar && t.avatar.trim() !== ""
+                            ? t.avatar
+                            : `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                                t.name
+                              )}&background=7c3aed&color=fff&size=128`
+                        }
+                        alt={t.name}
+                        className="avatar-img"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                            t.name
+                          )}&background=7c3aed&color=fff&size=128`;
+                        }}
+                      />
+                    </div>
 
-            <button
-              type="button"
-              onClick={next}
-              className="pointer-events-auto bg-white/80 backdrop-blur-sm hover:bg-white text-gray-700 rounded-full p-2 shadow"
-              aria-label="Next testimonial"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
-          </div>
+                    <div className="author-meta">
+                      <div className="author-name">{t.name}</div>
+                      {t.meta && <div className="author-role">{t.meta}</div>}
+                    </div>
+                  </footer>
 
-          {/* Dots */}
-          <div className="mt-8 flex items-center justify-center space-x-3">
-            {testimonials.map((_, i) => (
-              <button
-                key={i}
-                type="button"
-                onClick={() => goTo(i)}
-                className={`w-3 h-3 rounded-full transition-all focus:outline-none ${
-                  i === index ? "bg-indigo-600 w-3.5 h-3.5" : "bg-gray-300"
-                }`}
-                aria-label={`Go to testimonial ${i + 1}`}
-              />
-            ))}
-          </div>
+
+                  <div className="float-quote float-right">”</div>
+
+                </blockquote>
+              </article>
+            );
+          })}
         </div>
       </div>
     </section>

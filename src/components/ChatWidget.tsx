@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { messageAPI } from '../api/messages';
 import { useAuthStore } from '../stores/authStore';
-import { Send, X, RefreshCw, User, Phone, Video, Loader2 } from 'lucide-react';
+import { Send, X, RefreshCw, User, Loader2 } from 'lucide-react';
 
 interface ChatWidgetProps {
     isOpen: boolean;
@@ -112,15 +112,7 @@ export default function ChatWidget({ isOpen, onClose, studentId, studentName }: 
 
                     <div className="flex items-center space-x-1">
                         {/* Visual-only action buttons for premium feel */}
-                        <button className="p-2 text-gray-400 hover:text-indigo-600 rounded-full hover:bg-gray-50 transition-colors hidden sm:block">
-                            <Phone className="w-4 h-4" />
-                        </button>
-                        <button className="p-2 text-gray-400 hover:text-indigo-600 rounded-full hover:bg-gray-50 transition-colors hidden sm:block">
-                            <Video className="w-4 h-4" />
-                        </button>
-
-                        <div className="w-px h-6 bg-gray-200 mx-2 hidden sm:block"></div>
-
+                        
                         <button
                             onClick={() => loadMessages(true)}
                             className="p-2 text-gray-400 hover:text-gray-900 rounded-full hover:bg-gray-100 transition-colors"

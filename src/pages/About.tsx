@@ -205,37 +205,38 @@ export default function About() {
 
         {/* ---------------- WHY STUDENTS CHOOSE US ---------------- */}
         <div className="mb-16">
-          <h3
-            className={`text-3xl font-bold text-center mb-10 transition-all duration-700 ${
-              mounted ? "opacity-100" : "opacity-0"
-            }`}
-          >
-            Why Students Choose Our Programs
-          </h3>
+            <h3
+              className={`text-3xl font-bold text-center mb-10 transition-all duration-700 ${
+                mounted ? "opacity-100" : "opacity-0"
+              }`}
+            >
+              Why Students Choose Our Programs
+            </h3>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <StyledCard
-              title="Targeted Guidance"
-              subtitle="Plans tailored to your goals"
-              Icon={Target}
-            />
-            <StyledCard
-              title="Expert Counselors"
-              subtitle="Learn from top mentors"
-              Icon={UserCheck}
-            />
-            <StyledCard
-              title="Proven Results"
-              subtitle="98% student satisfaction"
-              Icon={BarChart2}
-            />
-            <StyledCard
-              title="Ongoing Support"
-              subtitle="Always with you"
-              Icon={Repeat}
-            />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              <StyledCard
+                title="Targeted Guidance"
+                subtitle="Plans tailored to your goals"
+                Icon={Target}
+              />
+              <StyledCard
+                title="Expert Counselors"
+                subtitle="Learn from top mentors"
+                Icon={UserCheck}
+              />
+              <StyledCard
+                title="Proven Results"
+                subtitle="98% student satisfaction"
+                Icon={BarChart2}
+              />
+              <StyledCard
+                title="Ongoing Support"
+                subtitle="Always with you"
+                Icon={Repeat}
+              />
+            </div>
           </div>
-        </div>
+
 
         {/* ---------------- WHY COLLEGEMITRA DIFFERENCE BOX ---------------- */}
         <div className="mb-20">

@@ -80,3 +80,199 @@ code {
 .label {
   @apply block text-sm font-medium text-gray-700 mb-1;
 }
+
+
+/* ---------- continuous marquee core ---------- */
+.testi-marquee-viewport {
+  width: 100%;
+  overflow: hidden;
+  --marquee-duration: 28s;
+  --marquee-paused: running;
+  padding: 12px 0 32px 0;
+  position: relative;
+}
+
+/* long track */
+.testi-marquee-track {
+  display: flex;
+  gap: 32px; /* bigger spacing between cards */
+  white-space: nowrap;
+  will-change: transform;
+  animation: marquee-scroll linear infinite;
+  animation-duration: var(--marquee-duration);
+  animation-play-state: var(--marquee-paused);
+  padding: 0 60px;
+}
+
+/* BIGGER CARDS */
+.testi-card {
+  flex: 0 0 480px;  /* ← increased width */
+  min-width: 420px;
+  max-width: 520px;
+  display: inline-block;
+  vertical-align: top;
+}
+
+/* marquee animation */
+@keyframes marquee-scroll {
+  0%   { transform: translateX(0%); }
+  100% { transform: translateX(-50%); }
+}
+
+/* ---------- card styling ---------- */
+.card-blockquote {
+  position: relative;
+  background: white;
+  border-radius: 22px;     /* smoother edges */
+  padding: 28px 30px;
+  border: 1px solid rgba(99,102,241,0.10);
+  min-height: 260px;
+  box-shadow: 0 14px 36px rgba(0,0,0,0.08);
+  transition: transform .25s ease, box-shadow .25s ease;
+}
+
+.testi-card:hover .card-blockquote {
+  transform: translateY(-8px);
+  box-shadow: 0 24px 50px rgba(0,0,0,0.12);
+}
+
+/* quote text (bigger, readable) */
+.quote-text {
+  color: #1f2937;
+  font-size: 16px;
+  line-height: 1.7;
+  text-align: left;
+  margin-top: 12px;
+  margin-bottom: 12px;
+}
+
+/* quote marks */
+.quote-mark-left {
+  position: absolute;
+  left: 22px;
+  top: 14px;
+  font-size: 46px;
+  color: rgba(79,70,229,0.10);
+  font-weight: 700;
+}
+.quote-mark-right {
+  position: absolute;
+  right: 22px;
+  bottom: 14px;
+  font-size: 32px;
+  color: rgba(79,70,229,0.10);
+}
+
+/* divider under text */
+.divider {
+  width: 80px;
+  height: 4px;
+  background: linear-gradient(90deg, #6366f1, #4f46e5);
+  border-radius: 999px;
+  margin: 10px auto 14px auto;
+}
+
+/* footer (author section) */
+/* --- FIX AUTHOR ALIGNMENT --- */
+
+/* Footer layout */
+.card-footer {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+/* Avatar wrapper with gradient ring */
+.avatar-container {
+  padding: 3px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #6366f1, #7c3aed);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0; /* NEVER shrink avatar */
+}
+
+/* Avatar image (supports any real image) */
+.avatar-img {
+  width: 64px;
+  height: 64px;
+  border-radius: 999px;
+  object-fit: cover;          /* IMPORTANT: fixes all real images */
+  object-position: center;    /* keeps face centered */
+  background: #eaeaea;        /* fallback bg */
+  border: 3px solid #ffffff;  /* clean white border */
+  display: block;
+}
+
+/* Name + Meta */
+.author-meta {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;               /* crucial for proper wrapping */
+}
+
+.author-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.2;
+  white-space: normal;
+}
+
+.author-role {
+  margin-top: 4px;
+  font-size: 13px;
+  color: #4f46e5;
+  line-height: 1.25;
+  white-space: normal;
+  word-break: break-word;
+  max-width: 260px;           /* keeps long college names clean */
+}
+/* ---------- edge fade (NO BLUR) ---------- */
+.edge-fade {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 12%;
+  pointer-events: none;
+  z-index: 30;
+  background: linear-gradient(to right, white 0%, transparent 100%);
+}
+
+.edge-fade-right {
+  right: 0;
+  background: linear-gradient(to left, white 0%, transparent 100%);
+}
+.edge-fade-left {
+  left: 0;
+}
+
+.float-quote {
+  position: absolute;
+  font-size: 52px;
+  font-weight: 900;
+  background: linear-gradient(180deg, #6366f1, #4f46e5);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  opacity: 0.16;
+  animation: floatQuote 6s ease-in-out infinite;
+}
+
+.float-left {
+  left: 18px;
+  top: 12px;
+}
+
+.float-right {
+  right: 18px;
+  bottom: 10px;
+  animation-delay: 1.5s;
+}
+
+@keyframes floatQuote {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+  100% { transform: translateY(0); }
+}
