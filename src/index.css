@@ -305,3 +305,17 @@ code {
     transform: translateY(0);
   }
 }
+
+@keyframes draw {
+  0% {
+    stroke-dasharray: 0 300;
+  }
+  100% {
+    stroke-dasharray: 300 0;
+  }
+}
+
+.animate-draw {
+  stroke-dasharray: 300;
+  animation: draw 1.2s ease forwards;
+}

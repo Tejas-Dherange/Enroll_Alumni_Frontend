@@ -1,5 +1,5 @@
 // src/pages/AdminDashboard.tsx
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { adminAPI } from '../api/admin';
 import Modal from '../components/Modal';
 import BroadcastModal from '../components/BroadcastModal';
@@ -46,6 +46,7 @@ export default function AdminDashboard() {
   const [showBatchModal, setShowBatchModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showAddMentorModal, setShowAddMentorModal] = useState(false);
+  const [isApproving, setIsApproving] = useState(false);
 
   const [selectedStudent, setSelectedStudent] = useState<any | null>(null);
   const [selectedMentor, setSelectedMentor] = useState<string>('');
@@ -85,8 +86,8 @@ export default function AdminDashboard() {
   const loadFilterOptions = async () => {
     try {
       const [collegeData, cityData, batchYears] = await Promise.all([
-        adminAPI.getColleges?.() ?? Promise.resolve([]),
-        adminAPI.getCities?.() ?? Promise.resolve([]),
+        (adminAPI as any).getColleges?.() ?? Promise.resolve([]),
+        (adminAPI as any).getCities?.() ?? Promise.resolve([]),
         // some APIs expose batch years; fallback to adminAPI.getBatchYears if available
         adminAPI.getBatchYears?.() ?? Promise.resolve([]),
       ]);
@@ -127,8 +128,8 @@ export default function AdminDashboard() {
         }
 
         case 'students': {
-          const payload = { ...filters, page, pageSize };
-          const studentsRes = await (adminAPI.getAllStudents?.(payload) ?? adminAPI.getAllStudents?.() ?? []);
+          // Fetch all students so StudentsSection can handle client-side filtering/pagination
+          const studentsRes = await (adminAPI.getAllStudents?.() ?? []);
           setAllStudents(studentsRes.items ?? studentsRes ?? []);
           setTotal(studentsRes.total ?? (studentsRes.items?.length ?? (Array.isArray(studentsRes) ? studentsRes.length : 0)));
           if (mentors.length === 0) setMentors(await adminAPI.getAllMentors());
@@ -173,13 +174,20 @@ export default function AdminDashboard() {
 
   const handleApprove = async () => {
     if (!selectedStudent) return;
-    await adminAPI.approveStudent(selectedStudent.id, selectedMentor);
+    setIsApproving(true);
+    try {
+      await adminAPI.approveStudent(selectedStudent.id, selectedMentor);
 
-    setShowApproveModal(false);
-    setSelectedStudent(null);
-    setSelectedMentor('');
+      setShowApproveModal(false);
+      setSelectedStudent(null);
+      setSelectedMentor('');
 
-    refreshTabs('pending', 'students');
+      refreshTabs('pending', 'students');
+    } catch (error) {
+      console.error("Error approving student", error);
+    } finally {
+      setIsApproving(false);
+    }
   };
 
   const handleBlockUser = async (userId: string) => {
@@ -338,41 +346,121 @@ export default function AdminDashboard() {
           </nav>
         </div>
 
-        {/* ------------------ FILTERS (responsive) ------------------ */}
-        <div className="mb-6 bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-          {/* Mobile header + toggle */}
-          <div className="md:hidden flex items-center justify-between mb-3">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-indigo-50 flex items-center justify-center">
-                <Filter className="text-indigo-600" />
+        {/* ------------------ FILTERS (only for Pending Students list which uses global pagination) ------------------ */}
+        {activeTab === 'pending' && (
+          <div className="mb-6 bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            {/* Mobile header + toggle */}
+            <div className="md:hidden flex items-center justify-between mb-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-indigo-50 flex items-center justify-center">
+                  <Filter className="text-indigo-600" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-800">Filters</h3>
+                  <p className="text-xs text-slate-500">Narrow down lists</p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-sm font-semibold text-slate-800">Filters</h3>
-                <p className="text-xs text-slate-500">Narrow down lists</p>
-              </div>
+
+              <button
+                onClick={() => setMobileOpen((s) => !s)}
+                aria-expanded={mobileOpen}
+                aria-controls="admin-mobile-filters"
+                className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition"
+              >
+                Filters
+                <svg
+                  className={`w-3 h-3 transform transition-transform ${mobileOpen ? 'rotate-180' : 'rotate-0'}`}
+                  viewBox="0 0 20 20"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path d="M5 8L10 13L15 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
             </div>
 
-            <button
-              onClick={() => setMobileOpen((s) => !s)}
-              aria-expanded={mobileOpen}
-              aria-controls="admin-mobile-filters"
-              className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition"
-            >
-              Filters
-              <svg
-                className={`w-3 h-3 transform transition-transform ${mobileOpen ? 'rotate-180' : 'rotate-0'}`}
-                viewBox="0 0 20 20"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path d="M5 8L10 13L15 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </button>
-          </div>
+            {/* Mobile stacked filters */}
+            {mobileOpen && (
+              <div id="admin-mobile-filters" className="md:hidden mb-4 space-y-3">
+                <div>
+                  <label className="text-xs font-semibold text-gray-600 mb-1 block">Search</label>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-3 text-gray-400" size={16} />
+                    <input
+                      type="text"
+                      placeholder="Name, email or title..."
+                      value={filters.search}
+                      onChange={(e) => handleFilterChange('search', e.target.value)}
+                      className="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-200 focus:ring-indigo-500 focus:border-indigo-500"
+                    />
+                  </div>
+                </div>
 
-          {/* Mobile stacked filters */}
-          {mobileOpen && (
-            <div id="admin-mobile-filters" className="md:hidden mb-4 space-y-3">
+                <div>
+                  <label className="text-xs font-semibold text-gray-600 mb-1 block">College</label>
+                  <select
+                    value={filters.college}
+                    onChange={(e) => handleFilterChange('college', e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:ring-indigo-500 focus:border-indigo-500"
+                  >
+                    <option value="">All Colleges</option>
+                    {colleges.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-gray-600 mb-1 block">City</label>
+                  <select
+                    value={filters.city}
+                    onChange={(e) => handleFilterChange('city', e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:ring-indigo-500 focus:border-indigo-500"
+                  >
+                    <option value="">All Cities</option>
+                    {cities.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-gray-600 mb-1 block">Batch</label>
+                  <select
+                    value={filters.batch}
+                    onChange={(e) => handleFilterChange('batch', e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:ring-indigo-500 focus:border-indigo-500"
+                  >
+                    <option value="">All Batches</option>
+                    {batches.map((b) => (
+                      <option key={b} value={b}>
+                        {b}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <button
+                    onClick={() => {
+                      clearFilters();
+                    }}
+                    className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-indigo-100 text-indigo-700 border border-indigo-200 hover:bg-indigo-200 transition"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Clear Filters
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Desktop / tablet grid filters */}
+            <div className="hidden md:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+              {/* Search */}
               <div>
                 <label className="text-xs font-semibold text-gray-600 mb-1 block">Search</label>
                 <div className="relative">
@@ -387,6 +475,7 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
+              {/* College */}
               <div>
                 <label className="text-xs font-semibold text-gray-600 mb-1 block">College</label>
                 <select
@@ -403,6 +492,7 @@ export default function AdminDashboard() {
                 </select>
               </div>
 
+              {/* City */}
               <div>
                 <label className="text-xs font-semibold text-gray-600 mb-1 block">City</label>
                 <select
@@ -419,6 +509,7 @@ export default function AdminDashboard() {
                 </select>
               </div>
 
+              {/* Batch */}
               <div>
                 <label className="text-xs font-semibold text-gray-600 mb-1 block">Batch</label>
                 <select
@@ -435,11 +526,10 @@ export default function AdminDashboard() {
                 </select>
               </div>
 
-              <div>
+              {/* Clear */}
+              <div className="flex items-end xl:items-center">
                 <button
-                  onClick={() => {
-                    clearFilters();
-                  }}
+                  onClick={clearFilters}
                   className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-indigo-100 text-indigo-700 border border-indigo-200 hover:bg-indigo-200 transition"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -447,144 +537,64 @@ export default function AdminDashboard() {
                 </button>
               </div>
             </div>
-          )}
 
-          {/* Desktop / tablet grid filters */}
-          <div className="hidden md:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-            {/* Search */}
-            <div>
-              <label className="text-xs font-semibold text-gray-600 mb-1 block">Search</label>
-              <div className="relative">
-                <Search className="absolute left-3 top-3 text-gray-400" size={16} />
-                <input
-                  type="text"
-                  placeholder="Name, email or title..."
-                  value={filters.search}
-                  onChange={(e) => handleFilterChange('search', e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-200 focus:ring-indigo-500 focus:border-indigo-500"
-                />
+            {/* footer line with count & per-page + pagination controls at right */}
+            <div className="mt-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+              <div className="text-sm text-slate-600">
+                {total === 0 ? (
+                  <>Showing 0 items</>
+                ) : (
+                  <>
+                    Showing <span className="font-semibold text-slate-900">{startIdx + 1}</span>–{' '}
+                    <span className="font-semibold text-slate-900">{endIdx}</span> of{' '}
+                    <span className="font-semibold text-slate-900">{total}</span> items
+                  </>
+                )}
               </div>
-            </div>
 
-            {/* College */}
-            <div>
-              <label className="text-xs font-semibold text-gray-600 mb-1 block">College</label>
-              <select
-                value={filters.college}
-                onChange={(e) => handleFilterChange('college', e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:ring-indigo-500 focus:border-indigo-500"
-              >
-                <option value="">All Colleges</option>
-                {colleges.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* City */}
-            <div>
-              <label className="text-xs font-semibold text-gray-600 mb-1 block">City</label>
-              <select
-                value={filters.city}
-                onChange={(e) => handleFilterChange('city', e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:ring-indigo-500 focus:border-indigo-500"
-              >
-                <option value="">All Cities</option>
-                {cities.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Batch */}
-            <div>
-              <label className="text-xs font-semibold text-gray-600 mb-1 block">Batch</label>
-              <select
-                value={filters.batch}
-                onChange={(e) => handleFilterChange('batch', e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:ring-indigo-500 focus:border-indigo-500"
-              >
-                <option value="">All Batches</option>
-                {batches.map((b) => (
-                  <option key={b} value={b}>
-                    {b}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Clear */}
-            <div className="flex items-end xl:items-center">
-              <button
-                onClick={clearFilters}
-                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-indigo-100 text-indigo-700 border border-indigo-200 hover:bg-indigo-200 transition"
-              >
-                <Trash2 className="w-4 h-4" />
-                Clear Filters
-              </button>
-            </div>
-          </div>
-
-          {/* footer line with count & per-page + pagination controls at right */}
-          <div className="mt-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-            <div className="text-sm text-slate-600">
-              {total === 0 ? (
-                <>Showing 0 items</>
-              ) : (
-                <>
-                  Showing <span className="font-semibold text-slate-900">{startIdx + 1}</span>–{' '}
-                  <span className="font-semibold text-slate-900">{endIdx}</span> of{' '}
-                  <span className="font-semibold text-slate-900">{total}</span> items
-                </>
-              )}
-            </div>
-
-            <div className="flex items-center gap-3 md:ml-auto">
-              <label className="text-xs text-slate-600 hidden md:inline">Per page</label>
-              <select
-                value={pageSize}
-                onChange={(e) => {
-                  setPageSize(Number(e.target.value));
-                  setPage(1);
-                }}
-                className="px-2 py-1 rounded-lg border border-gray-200 bg-white text-sm"
-              >
-                {[6, 12, 24, 48].map((n) => (
-                  <option key={n} value={n}>
-                    {n}
-                  </option>
-                ))}
-              </select>
-
-              {/* Pagination controls moved to bottom-right */}
-              <div className="ml-2 flex items-center gap-2">
-                <button
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={page <= 1}
-                  className={`flex items-center gap-2 px-3 py-1 rounded-md border border-gray-200 bg-white text-sm ${page <= 1 ? 'opacity-50 cursor-not-allowed' : 'hover:shadow'}`}
+              <div className="flex items-center gap-3 md:ml-auto">
+                <label className="text-xs text-slate-600 hidden md:inline">Per page</label>
+                <select
+                  value={pageSize}
+                  onChange={(e) => {
+                    setPageSize(Number(e.target.value));
+                    setPage(1);
+                  }}
+                  className="px-2 py-1 rounded-lg border border-gray-200 bg-white text-sm"
                 >
-                  <ChevronLeft className="w-4 h-4" />
-                  Prev
-                </button>
+                  {[6, 12, 24, 48].map((n) => (
+                    <option key={n} value={n}>
+                      {n}
+                    </option>
+                  ))}
+                </select>
 
-                <span className="text-sm text-slate-600 px-2">Page {page}/{totalPages}</span>
+                {/* Pagination controls moved to bottom-right */}
+                <div className="ml-2 flex items-center gap-2">
+                  <button
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={page <= 1}
+                    className={`flex items-center gap-2 px-3 py-1 rounded-md border border-gray-200 bg-white text-sm ${page <= 1 ? 'opacity-50 cursor-not-allowed' : 'hover:shadow'}`}
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                    Prev
+                  </button>
 
-                <button
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={page >= totalPages}
-                  className={`flex items-center gap-2 px-3 py-1 rounded-md border border-gray-200 bg-white text-sm ${page >= totalPages ? 'opacity-50 cursor-not-allowed' : 'hover:shadow'}`}
-                >
-                  Next
-                  <ChevronRight className="w-4 h-4" />
-                </button>
+                  <span className="text-sm text-slate-600 px-2">Page {page}/{totalPages}</span>
+
+                  <button
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={page >= totalPages}
+                    className={`flex items-center gap-2 px-3 py-1 rounded-md border border-gray-200 bg-white text-sm ${page >= totalPages ? 'opacity-50 cursor-not-allowed' : 'hover:shadow'}`}
+                  >
+                    Next
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* ------------------ LOADING / TABS CONTENT ------------------ */}
         {loading ? (
@@ -639,7 +649,7 @@ export default function AdminDashboard() {
               <ResponsiveList
                 emptyText="No pending students"
                 items={pendingStudents}
-                renderItem={(student) => (
+                renderItem={(student: any) => (
                   <StudentPendingCard
                     student={student}
                     onApprove={() => {
@@ -675,7 +685,7 @@ export default function AdminDashboard() {
               <ResponsiveList
                 emptyText="No pending announcements"
                 items={pendingAnnouncements}
-                renderItem={(announcement) => (
+                renderItem={(announcement: any) => (
                   <AnnouncementPendingCard
                     announcement={announcement}
                     onApprove={() => {
@@ -696,7 +706,7 @@ export default function AdminDashboard() {
               <ResponsiveList
                 emptyText="No announcements yet"
                 items={announcements}
-                renderItem={(announcement) => (
+                renderItem={(announcement: any) => (
                   <AnnouncementCard
                     announcement={announcement}
                     onDelete={() => {
@@ -719,6 +729,7 @@ export default function AdminDashboard() {
           selectedMentor={selectedMentor}
           setSelectedMentor={setSelectedMentor}
           handleApprove={handleApprove}
+          isApproving={isApproving}
           showBatchModal={showBatchModal}
           setShowBatchModal={setShowBatchModal}
           availableBatches={availableBatches}
@@ -924,6 +935,22 @@ function AnnouncementCard({ announcement, onDelete }: any) {
 -------------------------------------------------------------- */
 
 function Modals(props: any) {
+  const [mentorSearch, setMentorSearch] = useState('');
+
+  // Reset search when modal opens/closes or mentor list changes
+  useEffect(() => {
+    if (props.showApproveModal) {
+      setMentorSearch('');
+    }
+  }, [props.showApproveModal]);
+
+  const filteredMentors = (props.mentors || []).filter((m: any) => {
+    const term = mentorSearch.toLowerCase();
+    const name = `${m.firstName} ${m.lastName}`.toLowerCase();
+    const email = (m.email || '').toLowerCase();
+    return (name.includes(term) || email.includes(term)) && m.status === 'ACTIVE';
+  });
+
   return (
     <>
       <Modal
@@ -937,30 +964,61 @@ function Modals(props: any) {
             assign a mentor:
           </p>
 
-          <select
-            className="input"
-            value={props.selectedMentor}
-            onChange={(e) => props.setSelectedMentor(e.target.value)}
-          >
-            <option value="">Choose a mentor...</option>
-            {props.mentors
-              .filter((m: any) => m.status === 'ACTIVE')
-              .map((m: any) => (
-                <option key={m.id} value={m.id}>{m.firstName} {m.lastName}</option>
-              ))}
-          </select>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">Find Mentor</label>
+            <div className="relative">
+              <Search className="absolute left-3 top-2.5 text-gray-400 h-4 w-4" />
+              <input
+                type="text"
+                value={mentorSearch}
+                onChange={(e) => setMentorSearch(e.target.value)}
+                placeholder="Search name or email..."
+                className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+              />
+            </div>
+          </div>
 
-          <div className="flex gap-3">
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-gray-700">Select Mentor</label>
+            <select
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 bg-white"
+              value={props.selectedMentor}
+              onChange={(e) => props.setSelectedMentor(e.target.value)}
+            >
+              <option value="">Choose a mentor...</option>
+              {filteredMentors.map((m: any) => (
+                <option key={m.id} value={m.id}>
+                  {m.firstName} {m.lastName} ({m.email})
+                </option>
+              ))}
+              {filteredMentors.length === 0 && (
+                <option disabled>No mentors found</option>
+              )}
+            </select>
+          </div>
+
+          <div className="flex gap-3 pt-2">
             <button
               onClick={props.handleApprove}
-              className="btn btn-primary flex-1"
-              disabled={!props.selectedMentor}
+              className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition"
+              disabled={!props.selectedMentor || props.isApproving}
             >
-              Approve
+              {props.isApproving ? (
+                <>
+                  <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Approving...
+                </>
+              ) : (
+                'Approve'
+              )}
             </button>
             <button
               onClick={() => props.setShowApproveModal(false)}
-              className="btn btn-secondary flex-1"
+              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
+              disabled={props.isApproving}
             >
               Cancel
             </button>

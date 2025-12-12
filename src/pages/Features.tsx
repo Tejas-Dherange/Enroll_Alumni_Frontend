@@ -1,6 +1,14 @@
 // src/components/FeaturesSection.tsx
 import React, { useEffect, useRef, useState } from "react";
 import HowToAccess from "../assests/HowToAccess.png";
+import jobImg from "../assests/job.png"
+import mentorImg from "../assests/mentor.png"
+import peerImg from "../assests/peer-connect.png"
+import competitionImg from "../assests/competition.png"
+import announcementImg from "../assests/announcement.png"
+import skillImg from "../assests/skills.png"
+import transformBg from "../assests/black-bg.jpg"
+
 import {
   Briefcase,
   Users,
@@ -15,75 +23,97 @@ type Feature = {
   id: string;
   title: string;
   desc: string;
-  Icon: React.ComponentType<any>;
+  Icon?: React.ComponentType<any>;
+  img?: string; // optional transparent PNG you can add per-feature
 };
 
+/* ----------------- Features data (kept your content) ----------------- */
 const features: Feature[] = [
   {
     id: "jobs",
     title: "Job & Internship Radar",
     desc:
       "Don't rely on campus placements alone. Get real-time alerts for off-campus drives, internships, and startups hiring freshers.",
-    Icon: Briefcase,
+    img: jobImg,
+    // img: require("../assests/feature-jobs.png"), // <-- add your PNG here if available
   },
   {
     id: "mentor",
     title: "Mentor Access",
     desc:
       "Stuck on a project? Need career advice? Chat directly with assigned mentors and industry seniors who guide you 1-on-1.",
-    Icon: Users,
+    img: mentorImg,
+    // img: require("../assests/feature-mentor.png"),
   },
   {
     id: "peer",
     title: "Peer Network",
     desc:
       "Find out what's happening in other colleges. Connect with peers from your batch across different institutes to share notes and ideas.",
-    Icon: Share2,
+    img: peerImg,
+    // img: require("../assests/feature-peer.png"),
   },
   {
     id: "competitions",
     title: "Competitions & Hackathons",
     desc:
       "Get exclusive invites to EnrollEngineer hackathons and coding competitions. Build your resume before you graduate.",
-    Icon: Trophy,
+    img: competitionImg,
+    // img: require("../assests/feature-competitions.png"),
   },
   {
     id: "announcements",
     title: "Community Announcements",
     desc:
       "Admins broadcast crucial updates about university news, exam tips, and scholarship opportunities directly to your dashboard.",
-    Icon: Megaphone,
+    img: announcementImg,
+    // img: require("../assests/feature-announcements.png"),
   },
   {
     id: "skills",
     title: "Skill Development",
     desc:
       "Access curated training resources and workshops designed to bridge the gap between your syllabus and industry requirements.",
-    Icon: BookOpenCheck,
+    img: skillImg,
+    // img: require("../assests/feature-skills.png"),
   },
 ];
 
-function FeatureCard({ feature, visible }: { feature: Feature; visible: boolean }) {
-  const { Icon, title, desc } = feature;
+function FeatureItem({ feature, visible }: { feature: Feature; visible: boolean }) {
+  const { title, desc, img } = feature;
+
   return (
-    <article
-      className={`bg-white rounded-xl border border-indigo-50 shadow-sm p-6 flex flex-col gap-4 transform transition-all duration-500
-        ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}
-        hover:-translate-y-1 hover:shadow-md`}
+    <div
+      className={`w-full rounded-2xl p-6 flex flex-col items-center text-center gap-3 
+        transition-all duration-700 bg-black bg-opacity-90 
+        ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+      style={{
+        backgroundImage: `url(${transformBg})`, // black-bg.jpg
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        borderRadius: "20px",
+      }}
     >
-      <div className="flex items-center gap-4">
-        <div className="w-12 h-12 rounded-lg bg-indigo-50 flex items-center justify-center">
-          <Icon className="w-6 h-6 text-indigo-600" />
-        </div>
-        <h4 className="text-sm font-semibold text-gray-900">{title}</h4>
+      {/* IMAGE */}
+      <div className="flex items-center justify-center">
+        <img
+          src={img}
+          alt={title}
+          className="w-30 h-30 sm:w-35 sm:h-28 oject-contain"
+        />
       </div>
 
-      <p className="text-sm text-gray-500 leading-relaxed flex-1">{desc}</p>
-    </article>
+      {/* TITLE */}
+      <h3 className="text-lg sm:text-xl font-bold text-white">{title}</h3>
+
+      {/* DESCRIPTION */}
+      <p className="text-sm text-gray-200 max-w-xs sm:max-w-sm">{desc}</p>
+    </div>
   );
 }
 
-export default function Features() {
+
+export default function FeaturesSection() {
   const ref = useRef<HTMLElement | null>(null);
   const [visible, setVisible] = useState(false);
 
@@ -111,7 +141,7 @@ export default function Features() {
   }, []);
 
   return (
-    // full-width background
+    // full-width background (kept original background colour)
     <section id="features" ref={ref} className="w-full bg-[#EEF7FF] py-12 lg:py-20">
       <div className="mx-auto max-w-screen-xl px-4 sm:px-6 lg:px-8">
         {/* TAG + Header */}
@@ -131,14 +161,20 @@ export default function Features() {
           </p>
         </div>
 
-        {/* Feature Cards */}
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {/* ---------------- Feature blocks (no card borders or backgrounds) ----------------
+            Layout:
+              - 1 column on xs
+              - 2 columns on sm
+              - 3 columns on lg
+            Each block: circular image -> title -> paragraph
+        */}
+        <div className="grid gap-10 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 items-start place-items-center">
           {features.map((f) => (
-            <FeatureCard key={f.id} feature={f} visible={visible} />
+            <FeatureItem key={f.id} feature={f} visible={visible} />
           ))}
         </div>
 
-        {/* -- HOW TO ACCESS / IMAGE BLOCK -- */}
+        {/* -- HOW TO ACCESS / IMAGE BLOCK (kept exact content) -- */}
         <div
           className={`mt-10 bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden transform transition duration-500 ${
             visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"

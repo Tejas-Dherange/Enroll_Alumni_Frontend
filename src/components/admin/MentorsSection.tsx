@@ -10,6 +10,7 @@ export default function MentorsSection({ mentors, onBlockUser, onUnblockUser }: 
     const [searchQuery, setSearchQuery] = useState('');
     const [filterStatus, setFilterStatus] = useState('');
     const [loadingUserId, setLoadingUserId] = useState<string | null>(null);
+    const [showMobileFilters, setShowMobileFilters] = useState(false);
 
     // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
@@ -98,47 +99,90 @@ export default function MentorsSection({ mentors, onBlockUser, onUnblockUser }: 
         <>
             {/* Search and Filter Controls */}
             <div className="mb-6 bg-white p-5 rounded-xl shadow-md border border-gray-100">
+
+                {/* Mobile Filter Toggle */}
+                <div className="md:hidden flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-indigo-50 flex items-center justify-center">
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="20"
+                                height="20"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                className="text-indigo-600"
+                            >
+                                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 className="text-sm font-semibold text-slate-800">Filters</h3>
+                            <p className="text-xs text-slate-500">Narrow down list</p>
+                        </div>
+                    </div>
+                    <button
+                        onClick={() => setShowMobileFilters(!showMobileFilters)}
+                        className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition text-sm font-medium"
+                    >
+                        Filters
+                        <svg
+                            className={`w-4 h-4 transform transition-transform ${showMobileFilters ? 'rotate-180' : 'rotate-0'}`}
+                            viewBox="0 0 20 20"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                        >
+                            <path d="M5 8L10 13L15 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                    </button>
+                </div>
+
                 {/* Filters Row */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                    {/* Search */}
-                    <div className="flex flex-col">
-                        <label className="text-sm font-medium text-gray-700 mb-1">Search</label>
-                        <input
-                            type="text"
-                            placeholder="Name or email..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full border-gray-300 rounded-lg px-3 py-2 shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-                        />
-                    </div>
+                <div className={`${showMobileFilters ? 'block' : 'hidden'} md:block`}>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                        {/* Search */}
+                        <div className="flex flex-col">
+                            <label className="text-sm font-medium text-gray-700 mb-1">Search</label>
+                            <input
+                                type="text"
+                                placeholder="Name or email..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full border-gray-300 rounded-lg px-3 py-2 shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                            />
+                        </div>
 
-                    {/* Status */}
-                    <div className="flex flex-col">
-                        <label className="text-sm font-medium text-gray-700 mb-1">Status</label>
-                        <select
-                            value={filterStatus}
-                            onChange={(e) => setFilterStatus(e.target.value)}
-                            className="w-full border-gray-300 rounded-lg px-3 py-2 shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-                        >
-                            <option value="">All Statuses</option>
-                            {uniqueStatuses.map(status => (
-                                <option key={status} value={status}>{status}</option>
-                            ))}
-                        </select>
-                    </div>
+                        {/* Status */}
+                        <div className="flex flex-col">
+                            <label className="text-sm font-medium text-gray-700 mb-1">Status</label>
+                            <select
+                                value={filterStatus}
+                                onChange={(e) => setFilterStatus(e.target.value)}
+                                className="w-full border-gray-300 rounded-lg px-3 py-2 shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                            >
+                                <option value="">All Statuses</option>
+                                {uniqueStatuses.map(status => (
+                                    <option key={status} value={status}>{status}</option>
+                                ))}
+                            </select>
+                        </div>
 
-                    {/* Per Page Selector */}
-                    <div className="flex flex-col">
-                        <label className="text-sm font-medium text-gray-700 mb-1">Per Page</label>
-                        <select
-                            value={pageSize}
-                            onChange={(e) => setPageSize(Number(e.target.value))}
-                            className="w-full border-gray-300 rounded-lg px-3 py-2 shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-                        >
-                            {[5, 10, 20, 50].map(n => (
-                                <option key={n} value={n}>{n}</option>
-                            ))}
-                        </select>
+                        {/* Per Page Selector */}
+                        <div className="flex flex-col">
+                            <label className="text-sm font-medium text-gray-700 mb-1">Per Page</label>
+                            <select
+                                value={pageSize}
+                                onChange={(e) => setPageSize(Number(e.target.value))}
+                                className="w-full border-gray-300 rounded-lg px-3 py-2 shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                            >
+                                {[5, 10, 20, 50].map(n => (
+                                    <option key={n} value={n}>{n}</option>
+                                ))}
+                            </select>
+                        </div>
                     </div>
                 </div>
 

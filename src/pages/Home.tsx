@@ -18,16 +18,17 @@ export default function Home() {
       {/* HERO SECTION - gradient background */}
       <section className="relative overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="flex flex-col-reverse lg:flex-row items-center justify-between gap-8 lg:gap-16 py-12 sm:py-16 lg:py-20">
+          <div className="flex flex-col-reverse lg:flex-row items-center justify-between gap-8 lg:gap-16 py-4 sm:py-6 lg:py-8">
             {/* LEFT - TEXT SECTION */}
             <div className="w-full lg:w-1/2 text-center lg:text-left">
               <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold text-gray-900 leading-tight mb-4 sm:mb-6">
-                Welcome to <span className="text-indigo-500">Community Portal</span>
+                Your Engineering Journey <span className="text-indigo-500">Continues Beyond Admission.</span>
               </h1>
 
               <p className="text-base sm:text-lg md:text-xl text-gray-600 mb-8 sm:mb-12 max-w-xl mx-auto lg:mx-0 leading-relaxed">
-                Connect, collaborate, and grow together. A platform for students,
-                mentors, and administrators to build a thriving community.
+                Welcome to CollegeMitra by EnrollEngineer. The ultimate community
+                portal to track updates, find internships,
+                and network with peers across colleges in Maharashtra.
               </p>
             </div>
 
@@ -68,7 +69,7 @@ export default function Home() {
 
       {/* MAIN CONTENT - on cream background */}
       <div className="bg-[#F7F4EC] relative z-10">
-        <div className="max-w-7xl mx-auto px-2 sm:px-2 lg:px-2 py-2 sm:py-2 lg:py-2">
+        <div className="max-w-7xl mx-auto px-4 sm:px-2 lg:px-2 py-2 sm:py-2 lg:py-2">
           {/* CTA Section */}
           <div className="text-center py-4 sm:py-6 lg:py-8">
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-2 sm:mb-3 tracking-tight">
@@ -96,7 +97,7 @@ export default function Home() {
             </div>
           </div>
           <div className="w-full bg-indigo-600">
-            
+
           </div>
         </div>
       </div>
@@ -105,8 +106,8 @@ export default function Home() {
       {/* Features */}
       <Features />
 
-      <About />
-      
+      <About className="w-full" />
+
 
       {/* Testimonials & FAQ - back to gradient background */}
       <div className="w-full mx-auto">

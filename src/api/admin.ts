@@ -1,8 +1,8 @@
 import api from './auth';
 
 export const adminAPI = {
-    getPendingStudents: async () => {
-        const response = await api.get('/admin/pending-students');
+    getPendingStudents: async (params?: any) => {
+        const response = await api.get('/admin/pending-students', { params });
         return response.data;
     },
     approveStudent: async (studentId: string, mentorId: string) => {
@@ -13,8 +13,8 @@ export const adminAPI = {
         const response = await api.get('/admin/mentors');
         return response.data;
     },
-    getAllStudents: async () => {
-        const response = await api.get('/admin/students');
+    getAllStudents: async (params?: any) => {
+        const response = await api.get('/admin/students', { params });
         return response.data;
     },
     getAllAnnouncements: async () => {
