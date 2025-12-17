@@ -626,7 +626,7 @@ export default function AdminDashboard() {
                 <DashboardCard
                   title="Mentors"
                   count={statistics.mentors.total}
-                  colors="from-green-600 to-emerald-600"
+                  colors="from-blue-600 to-cyan-600"
                   icon={UserCog}
                 />
 
@@ -634,7 +634,7 @@ export default function AdminDashboard() {
                 <DashboardCard
                   title="Announcements"
                   count={statistics.announcements.total}
-                  colors="from-purple-600 to-pink-600"
+                  colors="from-blue-600 to-cyan-600"
                   icon={Volume2}
                   stats={[
                     { label: 'Pending', color: 'yellow', value: statistics.announcements.pending },
