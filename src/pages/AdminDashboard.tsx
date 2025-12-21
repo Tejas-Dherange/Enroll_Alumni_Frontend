@@ -7,6 +7,7 @@ import AddMentorModal from '../components/AddMentorModal';
 import StudentsSection from '../components/admin/StudentsSection';
 import MentorsSection from '../components/admin/MentorsSection';
 import { StatisticsSkeleton, ListSkeleton } from '../components/DashboardSkeleton';
+
 import {
   Plus,
   Megaphone,
@@ -16,10 +17,17 @@ import {
   UserCog,
   Bell,
   Volume2,
+  Search,
+  Trash2,
+  ChevronLeft,
+  ChevronRight,
+  Filter,
 } from 'lucide-react';
 
 export default function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState<'statistics' | 'pending' | 'students' | 'mentors' | 'pending-announcements' | 'announcements'>('statistics');
+  const [activeTab, setActiveTab] = useState<
+    'statistics' | 'pending' | 'students' | 'mentors' | 'pending-announcements' | 'announcements'
+  >('statistics');
 
   const [pendingStudents, setPendingStudents] = useState<any[]>([]);
   const [allStudents, setAllStudents] = useState<any[]>([]);
@@ -29,236 +37,256 @@ export default function AdminDashboard() {
   const [statistics, setStatistics] = useState<any | null>(null);
 
   const [loading, setLoading] = useState(false);
+  const [loadedTabs, setLoadedTabs] = useState<Set<string>>(new Set());
 
-  // modals & selection
+  // Modal states
   const [showApproveModal, setShowApproveModal] = useState(false);
   const [showBroadcastModal, setShowBroadcastModal] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [showBatchModal, setShowBatchModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showAddMentorModal, setShowAddMentorModal] = useState(false);
+  const [isApproving, setIsApproving] = useState(false);
 
   const [selectedStudent, setSelectedStudent] = useState<any | null>(null);
   const [selectedMentor, setSelectedMentor] = useState<string>('');
   const [selectedAnnouncement, setSelectedAnnouncement] = useState<any | null>(null);
-
-  const [rejectionRemarks, setRejectionRemarks] = useState('');
   const [selectedBatches, setSelectedBatches] = useState<number[]>([]);
   const [availableBatches, setAvailableBatches] = useState<number[]>([]);
+  const [rejectionRemarks, setRejectionRemarks] = useState('');
 
-  // track loaded tabs to avoid refetching unnecessarily
-  const [loadedTabs, setLoadedTabs] = useState<Set<string>>(new Set());
+  /* ------------------ Filter state + options ------------------ */
+  const [colleges, setColleges] = useState<string[]>([]);
+  const [cities, setCities] = useState<string[]>([]);
+  const [batches, setBatches] = useState<string[]>([]);
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  const [filters, setFilters] = useState({
+    search: '',
+    college: '',
+    city: '',
+    batch: '',
+  });
+
+  // pagination for lists when we request filtered data
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(12);
+  const [total, setTotal] = useState(0);
+
+  useEffect(() => {
+    loadFilterOptions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab]);
+  }, [activeTab, filters, page, pageSize]);
+
+  const loadFilterOptions = async () => {
+    try {
+      const [collegeData, cityData, batchYears] = await Promise.all([
+        (adminAPI as any).getColleges?.() ?? Promise.resolve([]),
+        (adminAPI as any).getCities?.() ?? Promise.resolve([]),
+        // some APIs expose batch years; fallback to adminAPI.getBatchYears if available
+        adminAPI.getBatchYears?.() ?? Promise.resolve([]),
+      ]);
+      setColleges(collegeData || []);
+      setCities(cityData || []);
+      // normalize batch years into strings
+      setBatches((batchYears || []).map((b: any) => String(b)));
+      if ((availableBatches || []).length === 0 && (adminAPI.getBatchYears?.() ?? false)) {
+        // also populate availableBatches if adminAPI provides numeric years
+        const years = await adminAPI.getBatchYears?.();
+        if (Array.isArray(years)) setAvailableBatches(years.map((y: any) => Number(y)));
+      }
+    } catch (e) {
+      console.error('Failed to load filter options', e);
+    }
+  };
+
+  /* -------------------- DATA LOAD -------------------- */
 
   const loadData = async (forceRefresh = false) => {
-    // Skip loading if data already loaded and not forcing refresh
     if (!forceRefresh && loadedTabs.has(activeTab)) return;
 
     setLoading(true);
     try {
-      if (activeTab === 'statistics') {
-        const data = await adminAPI.getStatistics();
-        setStatistics(data);
-      } else if (activeTab === 'pending') {
-        const data = await adminAPI.getPendingStudents();
-        setPendingStudents(data || []);
-        if (mentors.length === 0) {
-          const mentorData = await adminAPI.getAllMentors();
-          setMentors(mentorData || []);
+      switch (activeTab) {
+        case 'statistics':
+          setStatistics(await adminAPI.getStatistics());
+          break;
+
+        case 'pending': {
+          // try to pass filters + pagination if endpoint supports it
+          const payload = { ...filters, page, pageSize };
+          const pending = await (adminAPI.getPendingStudents?.(payload) ?? adminAPI.getPendingStudents?.() ?? []);
+          setPendingStudents(pending.items ?? pending ?? []);
+          setTotal(pending.total ?? (pending.items?.length ?? (Array.isArray(pending) ? pending.length : 0)));
+          if (mentors.length === 0) setMentors(await adminAPI.getAllMentors());
+          break;
         }
-      } else if (activeTab === 'students') {
-        const data = await adminAPI.getAllStudents();
-        setAllStudents(data || []);
-        if (mentors.length === 0) {
-          const mentorData = await adminAPI.getAllMentors();
-          setMentors(mentorData || []);
+
+        case 'students': {
+          // Fetch all students so StudentsSection can handle client-side filtering/pagination
+          const studentsRes = await (adminAPI.getAllStudents?.() ?? []);
+          setAllStudents(studentsRes.items ?? studentsRes ?? []);
+          setTotal(studentsRes.total ?? (studentsRes.items?.length ?? (Array.isArray(studentsRes) ? studentsRes.length : 0)));
+          if (mentors.length === 0) setMentors(await adminAPI.getAllMentors());
+          break;
         }
-      } else if (activeTab === 'mentors') {
-        const data = await adminAPI.getAllMentors();
-        setMentors(data || []);
-      } else if (activeTab === 'pending-announcements') {
-        const data = await adminAPI.getPendingAnnouncements();
-        setPendingAnnouncements(data || []);
-        if (availableBatches.length === 0) {
-          const batches = await adminAPI.getBatchYears();
-          setAvailableBatches(batches || []);
-        }
-      } else if (activeTab === 'announcements') {
-        const data = await adminAPI.getAllAnnouncements();
-        setAnnouncements(data || []);
+
+        case 'mentors':
+          setMentors(await adminAPI.getAllMentors());
+          break;
+
+        case 'pending-announcements':
+          setPendingAnnouncements(await adminAPI.getPendingAnnouncements());
+          if (availableBatches.length === 0)
+            setAvailableBatches((await adminAPI.getBatchYears?.()) ?? []);
+          break;
+
+        case 'announcements':
+          setAnnouncements(await adminAPI.getAllAnnouncements());
+          break;
       }
 
-      // mark this tab loaded
-      setLoadedTabs(prev => {
-        const next = new Set(prev);
-        next.add(activeTab);
-        return next;
-      });
-    } catch (error) {
-      console.error('Error loading data:', error);
+      setLoadedTabs((prev) => new Set(prev).add(activeTab));
+    } catch (e) {
+      console.error('Error loading:', e);
     } finally {
       setLoading(false);
     }
   };
 
-  /* ---------- Actions ---------- */
+  /* -------------------- ACTIONS -------------------- */
 
-  // approve student (assign mentor)
+  const handleFilterChange = (key: string, value: string) => {
+    setPage(1);
+    setFilters((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const clearFilters = () => {
+    setFilters({ search: '', college: '', city: '', batch: '' });
+    setPage(1);
+    setMobileOpen(false);
+  };
+
   const handleApprove = async () => {
     if (!selectedStudent) return;
+    setIsApproving(true);
     try {
       await adminAPI.approveStudent(selectedStudent.id, selectedMentor);
+
       setShowApproveModal(false);
       setSelectedStudent(null);
       setSelectedMentor('');
 
-      // force refresh pending/students tabs
-      setLoadedTabs(prev => {
-        const next = new Set(prev);
-        next.delete('pending');
-        next.delete('students');
-        return next;
-      });
-      loadData(true);
+      refreshTabs('pending', 'students');
     } catch (error) {
-      console.error('Error approving student:', error);
+      console.error("Error approving student", error);
+    } finally {
+      setIsApproving(false);
     }
   };
 
-  // optimistic block/unblock — update local state quickly, fallback reload on error
   const handleBlockUser = async (userId: string) => {
     try {
-      // optimistic update
-      setAllStudents(prev => prev.map(s => s.id === userId ? { ...s, status: 'BLOCKED' } : s));
-      setMentors(prev => prev.map(m => m.id === userId ? { ...m, status: 'BLOCKED' } : m));
-
+      setAllStudents((prev) =>
+        prev.map((s) => (s.id === userId ? { ...s, status: 'BLOCKED' } : s))
+      );
+      setMentors((prev) =>
+        prev.map((m) => (m.id === userId ? { ...m, status: 'BLOCKED' } : m))
+      );
       await adminAPI.blockUser(userId);
-    } catch (error) {
-      console.error('Error blocking user:', error);
-      // fallback: refresh current tab
-      setLoadedTabs(prev => {
-        const next = new Set(prev);
-        next.delete(activeTab);
-        return next;
-      });
-      loadData(true);
+    } catch {
+      refreshTabs(activeTab);
     }
   };
 
   const handleUnblockUser = async (userId: string) => {
     try {
-      // optimistic update
-      setAllStudents(prev => prev.map(s => s.id === userId ? { ...s, status: 'ACTIVE' } : s));
-      setMentors(prev => prev.map(m => m.id === userId ? { ...m, status: 'ACTIVE' } : m));
-
+      setAllStudents((prev) =>
+        prev.map((s) => (s.id === userId ? { ...s, status: 'ACTIVE' } : s))
+      );
+      setMentors((prev) =>
+        prev.map((m) => (m.id === userId ? { ...m, status: 'ACTIVE' } : m))
+      );
       await adminAPI.unblockUser(userId);
-    } catch (error) {
-      console.error('Error unblocking user:', error);
-      setLoadedTabs(prev => {
-        const next = new Set(prev);
-        next.delete(activeTab);
-        return next;
-      });
-      loadData(true);
+    } catch {
+      refreshTabs(activeTab);
     }
   };
 
-  // Approve announcement — send to selected batches (or all if none)
+  const refreshTabs = (...tabs: string[]) => {
+    setLoadedTabs((prev) => {
+      const next = new Set(prev);
+      tabs.forEach((t) => next.delete(t));
+      return next;
+    });
+    loadData(true);
+  };
+
   const handleApproveAnnouncement = async () => {
     if (!selectedAnnouncement) return;
-    try {
-      await adminAPI.approveAnnouncement(selectedAnnouncement.id, selectedBatches);
-      setShowBatchModal(false);
-      setSelectedAnnouncement(null);
-      setSelectedBatches([]);
 
-      // refresh pending ann & announcements
-      setLoadedTabs(prev => {
-        const next = new Set(prev);
-        next.delete('pending-announcements');
-        next.delete('announcements');
-        return next;
-      });
-      loadData(true);
-    } catch (error) {
-      console.error('Error approving announcement:', error);
-    }
+    await adminAPI.approveAnnouncement(selectedAnnouncement.id, selectedBatches);
+
+    setSelectedAnnouncement(null);
+    setShowBatchModal(false);
+    setSelectedBatches([]);
+
+    refreshTabs('pending-announcements', 'announcements');
   };
 
   const handleRejectAnnouncement = async () => {
-    if (!selectedAnnouncement) return;
-    if (!rejectionRemarks.trim()) {
-      alert('Please provide rejection remarks');
-      return;
-    }
-    try {
-      await adminAPI.rejectAnnouncement(selectedAnnouncement.id, rejectionRemarks);
-      setShowRejectModal(false);
-      setSelectedAnnouncement(null);
-      setRejectionRemarks('');
+    if (!selectedAnnouncement || !rejectionRemarks.trim()) return;
 
-      setLoadedTabs(prev => {
-        const next = new Set(prev);
-        next.delete('pending-announcements');
-        next.delete('announcements');
-        return next;
-      });
-      loadData(true);
-    } catch (error) {
-      console.error('Error rejecting announcement:', error);
-    }
+    await adminAPI.rejectAnnouncement(
+      selectedAnnouncement.id,
+      rejectionRemarks
+    );
+
+    setSelectedAnnouncement(null);
+    setShowRejectModal(false);
+    setRejectionRemarks('');
+
+    refreshTabs('pending-announcements', 'announcements');
   };
 
   const handleSendAnnouncement = async (title: string, content: string) => {
-    try {
-      await adminAPI.sendBroadcast(title, content);
-      setShowBroadcastModal(false);
-
-      setLoadedTabs(prev => {
-        const next = new Set(prev);
-        next.delete('announcements');
-        return next;
-      });
-
-      if (activeTab === 'announcements') loadData(true);
-    } catch (error) {
-      console.error('Error sending announcement:', error);
-    }
+    await adminAPI.sendBroadcast(title, content);
+    setShowBroadcastModal(false);
+    refreshTabs('announcements');
   };
 
   const handleDeleteAnnouncement = async () => {
     if (!selectedAnnouncement) return;
-    try {
-      await adminAPI.deleteAnnouncement(selectedAnnouncement.id);
-      setShowDeleteModal(false);
-      setSelectedAnnouncement(null);
 
-      setLoadedTabs(prev => {
-        const next = new Set(prev);
-        next.delete('announcements');
-        return next;
-      });
-      loadData(true);
-    } catch (error) {
-      console.error('Error deleting announcement:', error);
-    }
+    await adminAPI.deleteAnnouncement(selectedAnnouncement.id);
+    setShowDeleteModal(false);
+    refreshTabs('announcements');
   };
 
-  const toggleBatch = (batch: number) => {
-    setSelectedBatches(prev => prev.includes(batch) ? prev.filter(b => b !== batch) : [...prev, batch]);
-  };
+  const toggleBatch = (b: number) =>
+    setSelectedBatches((prev) =>
+      prev.includes(b) ? prev.filter((x) => x !== b) : [...prev, b]
+    );
 
-  /* ---------- Render ---------- */
+  const startIdx = total === 0 ? 0 : (page - 1) * pageSize;
+  const endIdx = Math.min(startIdx + (activeTab === 'students' ? allStudents.length : pendingStudents.length), total || (activeTab === 'students' ? allStudents.length : pendingStudents.length));
+  const totalPages = Math.max(1, Math.ceil((total || (activeTab === 'students' ? allStudents.length : pendingStudents.length)) / pageSize));
+
+  /* -------------------------------------------------------------- */
+  /*                            RENDER                              */
+  /* -------------------------------------------------------------- */
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+      <div className="max-w-7xl mx-auto px-3 sm:px-5 lg:px-8 py-6 md:py-8 w-full overflow-x-hidden">
+
+        {/* ------------------ HEADER ------------------ */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 flex-wrap">
           <div>
             <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
               Admin Dashboard
@@ -266,11 +294,12 @@ export default function AdminDashboard() {
             <p className="text-gray-600 mt-1">Manage your platform with ease</p>
           </div>
 
-          <div className="flex space-x-3">
+          <div className="flex flex-wrap gap-3">
             {activeTab === 'mentors' && (
               <button
                 onClick={() => setShowAddMentorModal(true)}
-                className="inline-flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-gray-50 text-gray-700 font-medium rounded-lg transition-all duration-150 border border-gray-300 shadow-sm"
+                className="inline-flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-gray-50
+                text-gray-700 font-medium rounded-lg border border-gray-300 shadow-sm transition"
               >
                 <Plus className="h-5 w-5" />
                 Add Mentor
@@ -279,7 +308,9 @@ export default function AdminDashboard() {
 
             <button
               onClick={() => setShowBroadcastModal(true)}
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-medium rounded-lg transition-all duration-150 shadow-md hover:shadow-lg"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg shadow-md text-white
+              bg-gradient-to-r from-indigo-600 to-purple-600 hover:shadow-lg hover:from-indigo-700 hover:to-purple-700 
+              transition-all"
             >
               <Megaphone className="h-5 w-5" />
               Send Announcement
@@ -287,9 +318,9 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Tabs */}
-        <div className="mb-8 bg-white rounded-xl shadow-sm border border-gray-200 p-2">
-          <nav className="flex flex-wrap justify-center gap-4 place-content-center">
+        {/* ------------------ TABS ------------------ */}
+        <div className="mb-8 bg-white rounded-xl shadow-sm border border-gray-200 p-2 overflow-hidden">
+          <nav className="flex overflow-x-auto pb-1 sm:pb-0 hide-scrollbar flex-nowrap justify-start gap-3 sm:gap-4">
             {[
               { id: 'statistics', label: 'Statistics', Icon: BarChart3 },
               { id: 'pending', label: 'Pending Students', Icon: Clock },
@@ -297,144 +328,340 @@ export default function AdminDashboard() {
               { id: 'mentors', label: 'Mentors', Icon: UserCog },
               { id: 'pending-announcements', label: 'Pending Announcements', Icon: Bell },
               { id: 'announcements', label: 'Announcements', Icon: Volume2 },
-            ].map(tab => (
+            ].map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm transition-all duration-150 ${activeTab === tab.id
-                  ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md'
-                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                }`}
+                className={`
+                  flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm transition whitespace-nowrap flex-shrink-0
+                  ${activeTab === tab.id
+                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'}
+                `}
               >
                 <tab.Icon className="h-5 w-5" />
-                <span className="hidden sm:inline">{tab.label}</span>
+                <span>{tab.label}</span>
               </button>
             ))}
           </nav>
         </div>
 
-        {loading ? (
-          <>
-            {activeTab === 'statistics' && <StatisticsSkeleton />}
-            {(activeTab === 'pending' || activeTab === 'students' || activeTab === 'mentors' || activeTab === 'announcements' || activeTab === 'pending-announcements') && <ListSkeleton />}
-          </>
-        ) : (
-          <>
-            {/* STATISTICS */}
-            {activeTab === 'statistics' && statistics && (
-              <div className="space-y-6">
-                <div className="grid md:grid-cols-3 gap-6">
-                  {/* Students */}
-                  <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex-1">
-                        <h3 className="text-lg font-semibold text-gray-700 mb-1">Students</h3>
-                        <p className="text-5xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
-                          {statistics.students.total}
-                        </p>
-                      </div>
-                      <div className="flex-shrink-0 h-16 w-16 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-2xl flex items-center justify-center shadow-lg">
-                        <Users className="h-8 w-8 text-white" />
-                      </div>
-                    </div>
-                    <div className="mt-4 pt-4 border-t border-gray-100 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <div className="h-2 w-2 rounded-full bg-green-500"></div>
-                          <span className="text-sm text-gray-600">Active</span>
-                        </div>
-                        <span className="text-sm font-semibold text-gray-900">{statistics.students.active}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <div className="h-2 w-2 rounded-full bg-yellow-500"></div>
-                          <span className="text-sm text-gray-600">Pending</span>
-                        </div>
-                        <span className="text-sm font-semibold text-gray-900">{statistics.students.pending}</span>
-                      </div>
-                    </div>
-                  </div>
+        {/* ------------------ FILTERS (only for Pending Students list which uses global pagination) ------------------ */}
+        {activeTab === 'pending' && (
+          <div className="mb-6 bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            {/* Mobile header + toggle */}
+            <div className="md:hidden flex items-center justify-between mb-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-indigo-50 flex items-center justify-center">
+                  <Filter className="text-indigo-600" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-800">Filters</h3>
+                  <p className="text-xs text-slate-500">Narrow down lists</p>
+                </div>
+              </div>
 
-                  {/* Mentors */}
-                  <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex-1">
-                        <h3 className="text-lg font-semibold text-gray-700 mb-1">Mentors</h3>
-                        <p className="text-5xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
-                          {statistics.mentors.total}
-                        </p>
-                      </div>
-                      <div className="flex-shrink-0 h-16 w-16 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center shadow-lg">
-                        <UserCog className="h-8 w-8 text-white" />
-                      </div>
-                    </div>
-                    <div className="mt-4 pt-4 border-t border-gray-100">
-                      <p className="text-sm text-gray-500">Guiding students to success</p>
-                    </div>
-                  </div>
+              <button
+                onClick={() => setMobileOpen((s) => !s)}
+                aria-expanded={mobileOpen}
+                aria-controls="admin-mobile-filters"
+                className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition"
+              >
+                Filters
+                <svg
+                  className={`w-3 h-3 transform transition-transform ${mobileOpen ? 'rotate-180' : 'rotate-0'}`}
+                  viewBox="0 0 20 20"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path d="M5 8L10 13L15 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+            </div>
 
-                  {/* Announcements */}
-                  <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex-1">
-                        <h3 className="text-lg font-semibold text-gray-700 mb-1">Announcements</h3>
-                        <p className="text-5xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                          {statistics.announcements.total}
-                        </p>
-                      </div>
-                      <div className="flex-shrink-0 h-16 w-16 bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl flex items-center justify-center shadow-lg">
-                        <Volume2 className="h-8 w-8 text-white" />
-                      </div>
-                    </div>
-                    <div className="mt-4 pt-4 border-t border-gray-100 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <div className="h-2 w-2 rounded-full bg-yellow-500"></div>
-                          <span className="text-sm text-gray-600">Pending</span>
-                        </div>
-                        <span className="text-sm font-semibold text-gray-900">{statistics.announcements.pending}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <div className="h-2 w-2 rounded-full bg-green-500"></div>
-                          <span className="text-sm text-gray-600">Approved</span>
-                        </div>
-                        <span className="text-sm font-semibold text-gray-900">{statistics.announcements.approved}</span>
-                      </div>
-                    </div>
+            {/* Mobile stacked filters */}
+            {mobileOpen && (
+              <div id="admin-mobile-filters" className="md:hidden mb-4 space-y-3">
+                <div>
+                  <label className="text-xs font-semibold text-gray-600 mb-1 block">Search</label>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-3 text-gray-400" size={16} />
+                    <input
+                      type="text"
+                      placeholder="Name, email or title..."
+                      value={filters.search}
+                      onChange={(e) => handleFilterChange('search', e.target.value)}
+                      className="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-200 focus:ring-indigo-500 focus:border-indigo-500"
+                    />
                   </div>
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-gray-600 mb-1 block">College</label>
+                  <select
+                    value={filters.college}
+                    onChange={(e) => handleFilterChange('college', e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:ring-indigo-500 focus:border-indigo-500"
+                  >
+                    <option value="">All Colleges</option>
+                    {colleges.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-gray-600 mb-1 block">City</label>
+                  <select
+                    value={filters.city}
+                    onChange={(e) => handleFilterChange('city', e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:ring-indigo-500 focus:border-indigo-500"
+                  >
+                    <option value="">All Cities</option>
+                    {cities.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-gray-600 mb-1 block">Batch</label>
+                  <select
+                    value={filters.batch}
+                    onChange={(e) => handleFilterChange('batch', e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:ring-indigo-500 focus:border-indigo-500"
+                  >
+                    <option value="">All Batches</option>
+                    {batches.map((b) => (
+                      <option key={b} value={b}>
+                        {b}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <button
+                    onClick={() => {
+                      clearFilters();
+                    }}
+                    className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-indigo-100 text-indigo-700 border border-indigo-200 hover:bg-indigo-200 transition"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Clear Filters
+                  </button>
                 </div>
               </div>
             )}
 
-            {/* Pending students */}
-            {activeTab === 'pending' && (
-              <div className="space-y-4">
-                {pendingStudents.length === 0 ? (
-                  <p className="text-gray-500 text-center py-8">No pending students</p>
+            {/* Desktop / tablet grid filters */}
+            <div className="hidden md:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+              {/* Search */}
+              <div>
+                <label className="text-xs font-semibold text-gray-600 mb-1 block">Search</label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-3 text-gray-400" size={16} />
+                  <input
+                    type="text"
+                    placeholder="Name, email or title..."
+                    value={filters.search}
+                    onChange={(e) => handleFilterChange('search', e.target.value)}
+                    className="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-200 focus:ring-indigo-500 focus:border-indigo-500"
+                  />
+                </div>
+              </div>
+
+              {/* College */}
+              <div>
+                <label className="text-xs font-semibold text-gray-600 mb-1 block">College</label>
+                <select
+                  value={filters.college}
+                  onChange={(e) => handleFilterChange('college', e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:ring-indigo-500 focus:border-indigo-500"
+                >
+                  <option value="">All Colleges</option>
+                  {colleges.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* City */}
+              <div>
+                <label className="text-xs font-semibold text-gray-600 mb-1 block">City</label>
+                <select
+                  value={filters.city}
+                  onChange={(e) => handleFilterChange('city', e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:ring-indigo-500 focus:border-indigo-500"
+                >
+                  <option value="">All Cities</option>
+                  {cities.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Batch */}
+              <div>
+                <label className="text-xs font-semibold text-gray-600 mb-1 block">Batch</label>
+                <select
+                  value={filters.batch}
+                  onChange={(e) => handleFilterChange('batch', e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:ring-indigo-500 focus:border-indigo-500"
+                >
+                  <option value="">All Batches</option>
+                  {batches.map((b) => (
+                    <option key={b} value={b}>
+                      {b}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Clear */}
+              <div className="flex items-end xl:items-center">
+                <button
+                  onClick={clearFilters}
+                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-indigo-100 text-indigo-700 border border-indigo-200 hover:bg-indigo-200 transition"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Clear Filters
+                </button>
+              </div>
+            </div>
+
+            {/* footer line with count & per-page + pagination controls at right */}
+            <div className="mt-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+              <div className="text-sm text-slate-600">
+                {total === 0 ? (
+                  <>Showing 0 items</>
                 ) : (
-                  pendingStudents.map(student => (
-                    <div key={student.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 flex justify-between items-center">
-                      <div>
-                        <h3 className="font-semibold text-lg">{student.firstName} {student.lastName}</h3>
-                        <p className="text-sm text-gray-600">{student.email}</p>
-                        <p className="text-sm text-gray-500">{student.college} • {student.city} • Batch {student.batchYear}</p>
-                      </div>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => { setSelectedStudent(student); setShowApproveModal(true); }}
-                          className="px-4 py-2 bg-green-600 text-white rounded-lg"
-                        >
-                          Approve
-                        </button>
-                      </div>
-                    </div>
-                  ))
+                  <>
+                    Showing <span className="font-semibold text-slate-900">{startIdx + 1}</span>–{' '}
+                    <span className="font-semibold text-slate-900">{endIdx}</span> of{' '}
+                    <span className="font-semibold text-slate-900">{total}</span> items
+                  </>
                 )}
+              </div>
+
+              <div className="flex items-center gap-3 md:ml-auto">
+                <label className="text-xs text-slate-600 hidden md:inline">Per page</label>
+                <select
+                  value={pageSize}
+                  onChange={(e) => {
+                    setPageSize(Number(e.target.value));
+                    setPage(1);
+                  }}
+                  className="px-2 py-1 rounded-lg border border-gray-200 bg-white text-sm"
+                >
+                  {[6, 12, 24, 48].map((n) => (
+                    <option key={n} value={n}>
+                      {n}
+                    </option>
+                  ))}
+                </select>
+
+                {/* Pagination controls moved to bottom-right */}
+                <div className="ml-2 flex items-center gap-2">
+                  <button
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={page <= 1}
+                    className={`flex items-center gap-2 px-3 py-1 rounded-md border border-gray-200 bg-white text-sm ${page <= 1 ? 'opacity-50 cursor-not-allowed' : 'hover:shadow'}`}
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                    Prev
+                  </button>
+
+                  <span className="text-sm text-slate-600 px-2">Page {page}/{totalPages}</span>
+
+                  <button
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={page >= totalPages}
+                    className={`flex items-center gap-2 px-3 py-1 rounded-md border border-gray-200 bg-white text-sm ${page >= totalPages ? 'opacity-50 cursor-not-allowed' : 'hover:shadow'}`}
+                  >
+                    Next
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ------------------ LOADING / TABS CONTENT ------------------ */}
+        {loading ? (
+          <>
+            {activeTab === 'statistics' && <StatisticsSkeleton />}
+            {['pending', 'students', 'mentors', 'announcements', 'pending-announcements'].includes(activeTab) && (
+              <ListSkeleton />
+            )}
+          </>
+        ) : (
+          <>
+            {/* ---------------- STATISTICS ---------------- */}
+            {activeTab === 'statistics' && statistics && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
+
+                {/* Students Card */}
+                <DashboardCard
+                  title="Students"
+                  count={statistics.students.total}
+                  colors="from-blue-600 to-cyan-600"
+                  icon={Users}
+                  stats={[
+                    { label: 'Active', color: 'green', value: statistics.students.active },
+                    { label: 'Pending', color: 'yellow', value: statistics.students.pending },
+                  ]}
+                />
+
+                {/* Mentors */}
+                <DashboardCard
+                  title="Mentors"
+                  count={statistics.mentors.total}
+                  colors="from-blue-600 to-cyan-600"
+                  icon={UserCog}
+                />
+
+                {/* Announcements */}
+                <DashboardCard
+                  title="Announcements"
+                  count={statistics.announcements.total}
+                  colors="from-blue-600 to-cyan-600"
+                  icon={Volume2}
+                  stats={[
+                    { label: 'Pending', color: 'yellow', value: statistics.announcements.pending },
+                    { label: 'Approved', color: 'green', value: statistics.announcements.approved },
+                  ]}
+                />
               </div>
             )}
 
-            {/* Students list / management */}
+            {/* ---------------- PENDING STUDENTS ---------------- */}
+            {activeTab === 'pending' && (
+              <ResponsiveList
+                emptyText="No pending students"
+                items={pendingStudents}
+                renderItem={(student: any) => (
+                  <StudentPendingCard
+                    student={student}
+                    onApprove={() => {
+                      setSelectedStudent(student);
+                      setShowApproveModal(true);
+                    }}
+                  />
+                )}
+              />
+            )}
+
+            {/* ---------------- STUDENTS ---------------- */}
             {activeTab === 'students' && (
               <StudentsSection
                 students={allStudents}
@@ -444,213 +671,442 @@ export default function AdminDashboard() {
               />
             )}
 
-            {/* Mentors list / management */}
+            {/* ---------------- MENTORS ---------------- */}
             {activeTab === 'mentors' && (
               <MentorsSection
                 mentors={mentors}
                 onBlockUser={handleBlockUser}
                 onUnblockUser={handleUnblockUser}
-                onAddMentor={() => setShowAddMentorModal(true)}
               />
             )}
 
-            {/* Pending announcements */}
+            {/* ---------------- PENDING ANNOUNCEMENTS ---------------- */}
             {activeTab === 'pending-announcements' && (
-              <div className="space-y-4">
-                {pendingAnnouncements.length === 0 ? (
-                  <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-16 text-center">
-                    <p className="text-lg font-medium text-gray-900 mb-1">No pending announcements</p>
-                    <p className="text-sm text-gray-500">All announcements have been reviewed</p>
-                  </div>
-                ) : (
-                  pendingAnnouncements.map(announcement => (
-                    <div key={announcement.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200">
-                      <div className="flex items-start gap-4 mb-4">
-                        <div className="flex-shrink-0 h-12 w-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center text-white font-semibold">
-                          {(announcement.author?.name || 'AN').split(' ').map((n: string) => n[0]).join('').slice(0,2)}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-xl font-bold text-gray-900 mb-2">{announcement.title}</h3>
-                          <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
-                            <span className="font-medium">{announcement.author?.name}</span>
-                            <span className="text-gray-400">•</span>
-                            <span>{announcement.author?.email}</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-xs text-gray-500">
-                            <span>{announcement.author?.college}</span>
-                            <span className="text-gray-400">•</span>
-                            <span>Batch {announcement.author?.batchYear}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="bg-gray-50 rounded-lg p-4 mb-4 border border-gray-100">
-                        <p className="text-gray-800 leading-relaxed whitespace-pre-wrap">{announcement.content}</p>
-                      </div>
-
-                      <div className="flex gap-3">
-                        <button
-                          onClick={() => { setSelectedAnnouncement(announcement); setSelectedBatches([]); setShowBatchModal(true); }}
-                          className="inline-flex items-center gap-2 px-5 py-2.5 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-all duration-150 shadow-sm hover:shadow"
-                        >
-                          Approve
-                        </button>
-
-                        <button
-                          onClick={() => { setSelectedAnnouncement(announcement); setRejectionRemarks(''); setShowRejectModal(true); }}
-                          className="inline-flex items-center gap-2 px-5 py-2.5 bg-red-50 hover:bg-red-100 text-red-700 font-medium rounded-lg transition-all duration-150 border border-red-200"
-                        >
-                          Reject
-                        </button>
-                      </div>
-                    </div>
-                  ))
+              <ResponsiveList
+                emptyText="No pending announcements"
+                items={pendingAnnouncements}
+                renderItem={(announcement: any) => (
+                  <AnnouncementPendingCard
+                    announcement={announcement}
+                    onApprove={() => {
+                      setSelectedAnnouncement(announcement);
+                      setShowBatchModal(true);
+                    }}
+                    onReject={() => {
+                      setSelectedAnnouncement(announcement);
+                      setShowRejectModal(true);
+                    }}
+                  />
                 )}
-              </div>
+              />
             )}
 
-            {/* Announcements (approved / all) */}
+            {/* ---------------- ALL ANNOUNCEMENTS ---------------- */}
             {activeTab === 'announcements' && (
-              <div className="space-y-4">
-                {announcements.length === 0 ? (
-                  <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-16 text-center">
-                    <p className="text-lg font-medium text-gray-900 mb-1">No announcements yet</p>
-                    <p className="text-sm text-gray-500">Approved announcements will appear here</p>
-                  </div>
-                ) : (
-                  announcements.map(announcement => (
-                    <div key={announcement.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200">
-                      <div className="flex justify-between items-start mb-4">
-                        <div className="flex items-start gap-4 flex-1">
-                          <div className="flex-shrink-0 h-11 w-11 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
-                            {(announcement.authorName || announcement.author || 'AN').toString().split(' ').map((n: string) => n[0]).join('').slice(0,2)}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h3 className="text-xl font-bold text-gray-900 mb-1">{announcement.title}</h3>
-                            <p className="text-sm text-gray-600">By {announcement.authorName || announcement.author}</p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium shrink-0 ${announcement.status?.toLowerCase() === 'approved' ? 'bg-green-100 text-green-800 ring-1 ring-green-600/20' : announcement.status?.toLowerCase() === 'rejected' ? 'bg-red-100 text-red-800 ring-1 ring-red-600/20' : 'bg-yellow-100 text-yellow-800 ring-1 ring-yellow-600/20'}`}>
-                            <span className={`mr-1.5 h-1.5 w-1.5 rounded-full ${announcement.status?.toLowerCase() === 'approved' ? 'bg-green-600' : announcement.status?.toLowerCase() === 'rejected' ? 'bg-red-600' : 'bg-yellow-600'}`}></span>
-                            {announcement.status}
-                          </span>
-
-                          <button
-                            onClick={() => { setSelectedAnnouncement(announcement); setShowDeleteModal(true); }}
-                            className="text-red-600 hover:text-red-800 p-1"
-                            title="Delete announcement"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                              <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
-                            </svg>
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="bg-gray-50 rounded-lg p-4 mb-3 border border-gray-100">
-                        <p className="text-gray-800 leading-relaxed whitespace-pre-wrap">{announcement.content}</p>
-                      </div>
-
-                      {announcement.approver && (
-                        <div className="flex items-center gap-2 text-sm text-gray-500">
-                          <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                          </svg>
-                          <span>Reviewed by {announcement.approver}</span>
-                        </div>
-                      )}
-                    </div>
-                  ))
+              <ResponsiveList
+                emptyText="No announcements yet"
+                items={announcements}
+                renderItem={(announcement: any) => (
+                  <AnnouncementCard
+                    announcement={announcement}
+                    onDelete={() => {
+                      setSelectedAnnouncement(announcement);
+                      setShowDeleteModal(true);
+                    }}
+                  />
                 )}
-              </div>
+              />
             )}
           </>
         )}
 
-        {/* Approve student modal */}
-        <Modal isOpen={showApproveModal} onClose={() => setShowApproveModal(false)} title="Approve Student">
-          <div className="space-y-4">
-            <p>Approve <strong>{selectedStudent?.firstName} {selectedStudent?.lastName}</strong> and assign a mentor:</p>
+        {/* ---------------- MODALS ---------------- */}
+        <Modals
+          showApproveModal={showApproveModal}
+          setShowApproveModal={setShowApproveModal}
+          selectedStudent={selectedStudent}
+          mentors={mentors}
+          selectedMentor={selectedMentor}
+          setSelectedMentor={setSelectedMentor}
+          handleApprove={handleApprove}
+          isApproving={isApproving}
+          showBatchModal={showBatchModal}
+          setShowBatchModal={setShowBatchModal}
+          availableBatches={availableBatches}
+          selectedBatches={selectedBatches}
+          toggleBatch={toggleBatch}
+          handleApproveAnnouncement={handleApproveAnnouncement}
+          showRejectModal={showRejectModal}
+          setShowRejectModal={setShowRejectModal}
+          rejectionRemarks={rejectionRemarks}
+          setRejectionRemarks={setRejectionRemarks}
+          handleRejectAnnouncement={handleRejectAnnouncement}
+          showDeleteModal={showDeleteModal}
+          setShowDeleteModal={setShowDeleteModal}
+          selectedAnnouncement={selectedAnnouncement}
+          handleDeleteAnnouncement={handleDeleteAnnouncement}
+          showBroadcastModal={showBroadcastModal}
+          setShowBroadcastModal={setShowBroadcastModal}
+          handleSendAnnouncement={handleSendAnnouncement}
+          showAddMentorModal={showAddMentorModal}
+          setShowAddMentorModal={setShowAddMentorModal}
+          loadData={loadData}
+        />
 
-            <div>
-              <label className="label">Select Mentor</label>
-              <select className="input" value={selectedMentor} onChange={(e) => setSelectedMentor(e.target.value)}>
-                <option value="">Choose a mentor...</option>
-                {mentors.filter(m => m.status?.toUpperCase() === 'ACTIVE').map(m => (
-                  <option key={m.id} value={m.id}>{m.firstName} {m.lastName}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="flex space-x-3">
-              <button onClick={handleApprove} disabled={!selectedMentor} className="btn btn-primary flex-1">Approve</button>
-              <button onClick={() => setShowApproveModal(false)} className="btn btn-secondary flex-1">Cancel</button>
-            </div>
-          </div>
-        </Modal>
-
-        {/* Batch select modal for announcement approval */}
-        <Modal isOpen={showBatchModal} onClose={() => setShowBatchModal(false)} title="Select Target Batches">
-          <div className="space-y-4">
-            <p className="text-sm text-gray-600">Select which batches should see this announcement. Leave empty to show to all students.</p>
-
-            <div className="space-y-2">
-              {availableBatches.map(batch => (
-                <label key={batch} className="flex items-center space-x-2 cursor-pointer">
-                  <input type="checkbox" checked={selectedBatches.includes(batch)} onChange={() => toggleBatch(batch)} className="rounded border-gray-300 text-primary-600 focus:ring-primary-500" />
-                  <span>Batch {batch}</span>
-                </label>
-              ))}
-            </div>
-
-            {selectedBatches.length > 0 ? (
-              <p className="text-sm text-blue-600">Will be visible to: Batch {selectedBatches.sort((a,b)=>a-b).join(', ')}</p>
-            ) : (
-              <p className="text-sm text-green-600">Will be visible to: All students</p>
-            )}
-
-            <div className="flex space-x-3 pt-4">
-              <button onClick={handleApproveAnnouncement} className="btn btn-primary flex-1">Approve</button>
-              <button onClick={() => setShowBatchModal(false)} className="btn btn-secondary flex-1">Cancel</button>
-            </div>
-          </div>
-        </Modal>
-
-        {/* Reject announcement modal */}
-        <Modal isOpen={showRejectModal} onClose={() => setShowRejectModal(false)} title="Reject Announcement">
-          <div className="space-y-4">
-            <p className="text-sm text-gray-600">Please provide a reason for rejecting this announcement. The student will be notified.</p>
-            <div>
-              <label className="label">Rejection Remarks</label>
-              <textarea className="input" rows={4} value={rejectionRemarks} onChange={(e) => setRejectionRemarks(e.target.value)} placeholder="Enter reason for rejection..." />
-            </div>
-            <div className="flex space-x-3">
-              <button onClick={handleRejectAnnouncement} className="btn btn-primary flex-1">Reject</button>
-              <button onClick={() => setShowRejectModal(false)} className="btn btn-secondary flex-1">Cancel</button>
-            </div>
-          </div>
-        </Modal>
-
-        {/* Delete announcement modal */}
-        <Modal isOpen={showDeleteModal} onClose={() => setShowDeleteModal(false)} title="Delete Announcement">
-          <div className="space-y-4">
-            <p className="text-sm text-gray-600">Are you sure you want to delete the announcement <strong>"{selectedAnnouncement?.title}"</strong> ?</p>
-            <p className="text-sm text-red-600">This action cannot be undone. The announcement will be permanently removed.</p>
-            <div className="flex space-x-3">
-              <button onClick={handleDeleteAnnouncement} className="btn btn-primary flex-1 bg-red-600 hover:bg-red-700">Delete</button>
-              <button onClick={() => setShowDeleteModal(false)} className="btn btn-secondary flex-1">Cancel</button>
-            </div>
-          </div>
-        </Modal>
-
-        {/* Broadcast modal */}
-        <BroadcastModal isOpen={showBroadcastModal} onClose={() => setShowBroadcastModal(false)} onSend={handleSendAnnouncement} title="Send Portal-Wide Announcement" />
-
-        {/* Add mentor modal */}
-        <AddMentorModal isOpen={showAddMentorModal} onClose={() => setShowAddMentorModal(false)} onSuccess={() => { setShowAddMentorModal(false); loadData(true); }} />
       </div>
     </div>
+  );
+}
+
+/* --------------------------------------------------------------
+   REUSABLE COMPONENTS FOR CLEAN, RESPONSIVE UI
+-------------------------------------------------------------- */
+
+function DashboardCard({ title, count, colors, icon: Icon, stats = [] }: any) {
+  return (
+    <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition transform hover:-translate-y-1">
+      <div className="flex justify-between items-start mb-4">
+        <div>
+          <h3 className="text-lg font-semibold text-gray-700">{title}</h3>
+          <p className={`text-5xl font-bold bg-gradient-to-r ${colors} bg-clip-text text-transparent`}>
+            {count}
+          </p>
+        </div>
+        <div className={`h-16 w-16 rounded-2xl flex items-center justify-center bg-gradient-to-br ${colors} shadow-lg`}>
+          <Icon className="h-8 w-8 text-white" />
+        </div>
+      </div>
+
+      {stats.length > 0 && (
+        <div className="mt-4 pt-4 border-t border-gray-100 space-y-2">
+          {stats.map((s: any) => (
+            <div key={s.label} className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className={`h-2 w-2 rounded-full ${s.color === 'green' ? 'bg-green-500' : s.color === 'yellow' ? 'bg-yellow-500' : 'bg-gray-300'}`} />
+                <span className="text-sm text-gray-600">{s.label}</span>
+              </div>
+              <span className="font-semibold">{s.value}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ResponsiveList({ items, emptyText, renderItem }: any) {
+  if (!items.length)
+    return (
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+        <p className="text-lg font-medium text-gray-900">{emptyText}</p>
+      </div>
+    );
+
+  return (
+    <div className="space-y-4">
+      {items.map(renderItem)}
+    </div>
+  );
+}
+
+/* --------------------------------------------------------------
+   CUSTOM CARDS
+-------------------------------------------------------------- */
+
+function StudentPendingCard({ student, onApprove }: any) {
+  return (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4
+    flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+      <div className="flex-1">
+        <h3 className="font-semibold text-lg">
+          {student.firstName} {student.lastName}
+        </h3>
+        <p className="text-sm text-gray-600">{student.email}</p>
+        <p className="text-xs text-gray-500">
+          {student.college} • {student.city} • Batch {student.batchYear}
+        </p>
+      </div>
+
+      <button
+        onClick={onApprove}
+        className="w-full sm:w-auto px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg"
+      >
+        Approve
+      </button>
+    </div>
+  );
+}
+
+function AnnouncementPendingCard({ announcement, onApprove, onReject }: any) {
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition">
+      <div className="flex flex-col sm:flex-row gap-4 mb-4">
+        <div className="flex-shrink-0 h-12 w-12 bg-gradient-to-br from-purple-500 to-pink-600 text-white rounded-full flex items-center justify-center font-semibold">
+          {announcement.author?.name
+            ?.split(' ')
+            .map((n: string) => n[0])
+            .join('')
+            .slice(0, 2)}
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <h3 className="text-xl font-bold">{announcement.title}</h3>
+          <p className="text-sm text-gray-600">
+            {announcement.author?.name} · {announcement.author?.email}
+          </p>
+          <p className="text-xs text-gray-500">
+            {announcement.author?.college} · Batch {announcement.author?.batchYear}
+          </p>
+        </div>
+      </div>
+
+      <div className="bg-gray-50 p-4 border border-gray-100 rounded-lg mb-4">
+        <p className="text-gray-800 whitespace-pre-wrap">{announcement.content}</p>
+      </div>
+
+      <div className="flex flex-wrap gap-3">
+        <button
+          onClick={onApprove}
+          className="px-5 py-2.5 rounded-lg bg-green-600 hover:bg-green-700 text-white"
+        >
+          Approve
+        </button>
+
+        <button
+          onClick={onReject}
+          className="px-5 py-2.5 bg-red-50 text-red-700 border border-red-200 rounded-lg hover:bg-red-100"
+        >
+          Reject
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function AnnouncementCard({ announcement, onDelete }: any) {
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition">
+      <div className="flex flex-col sm:flex-row justify-between gap-4 mb-4">
+        <div className="flex items-start gap-4 flex-1 min-w-0">
+          <div className="h-11 w-11 bg-gradient-to-br from-indigo-500 to-purple-600 text-white rounded-full flex items-center justify-center font-semibold">
+            {announcement.authorName
+              ?.split(' ')
+              ?.map((n: string) => n[0])
+              ?.join('')
+              ?.slice(0, 2) || 'AN'}
+          </div>
+
+          <div className="flex-1 min-w-0">
+            <h3 className="text-xl font-bold">{announcement.title}</h3>
+            <p className="text-sm text-gray-600">By {announcement.authorName}</p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <span
+            className={`
+              inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium
+              ${announcement.status?.toLowerCase() === 'approved'
+                ? 'bg-green-100 text-green-800'
+                : announcement.status?.toLowerCase() === 'rejected'
+                  ? 'bg-red-100 text-red-800'
+                  : 'bg-yellow-100 text-yellow-800'
+              }
+            `}
+          >
+            {announcement.status}
+          </span>
+
+          <button className="text-red-600 hover:text-red-800" onClick={onDelete}>
+            ✕
+          </button>
+        </div>
+      </div>
+
+      <div className="bg-gray-50 p-4 rounded-lg border border-gray-100 mb-3">
+        <p className="text-gray-800 whitespace-pre-wrap">{announcement.content}</p>
+      </div>
+    </div>
+  );
+}
+
+/* --------------------------------------------------------------
+   MODALS WRAPPER — unchanged, only grouped for clarity
+-------------------------------------------------------------- */
+
+function Modals(props: any) {
+  const [mentorSearch, setMentorSearch] = useState('');
+
+  // Reset search when modal opens/closes or mentor list changes
+  useEffect(() => {
+    if (props.showApproveModal) {
+      setMentorSearch('');
+    }
+  }, [props.showApproveModal]);
+
+  const filteredMentors = (props.mentors || []).filter((m: any) => {
+    const term = mentorSearch.toLowerCase();
+    const name = `${m.firstName} ${m.lastName}`.toLowerCase();
+    const email = (m.email || '').toLowerCase();
+    return (name.includes(term) || email.includes(term)) && m.status === 'ACTIVE';
+  });
+
+  return (
+    <>
+      <Modal
+        isOpen={props.showApproveModal}
+        onClose={() => props.setShowApproveModal(false)}
+        title="Approve Student"
+      >
+        <div className="space-y-4">
+          <p>
+            Approve <strong>{props.selectedStudent?.firstName} {props.selectedStudent?.lastName}</strong> and
+            assign a mentor:
+          </p>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">Find Mentor</label>
+            <div className="relative">
+              <Search className="absolute left-3 top-2.5 text-gray-400 h-4 w-4" />
+              <input
+                type="text"
+                value={mentorSearch}
+                onChange={(e) => setMentorSearch(e.target.value)}
+                placeholder="Search name or email..."
+                className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-gray-700">Select Mentor</label>
+            <select
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 bg-white"
+              value={props.selectedMentor}
+              onChange={(e) => props.setSelectedMentor(e.target.value)}
+            >
+              <option value="">Choose a mentor...</option>
+              {filteredMentors.map((m: any) => (
+                <option key={m.id} value={m.id}>
+                  {m.firstName} {m.lastName} ({m.email})
+                </option>
+              ))}
+              {filteredMentors.length === 0 && (
+                <option disabled>No mentors found</option>
+              )}
+            </select>
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <button
+              onClick={props.handleApprove}
+              className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition"
+              disabled={!props.selectedMentor || props.isApproving}
+            >
+              {props.isApproving ? (
+                <>
+                  <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Approving...
+                </>
+              ) : (
+                'Approve'
+              )}
+            </button>
+            <button
+              onClick={() => props.setShowApproveModal(false)}
+              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
+              disabled={props.isApproving}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={props.showBatchModal}
+        onClose={() => props.setShowBatchModal(false)}
+        title="Choose batches to publish to"
+      >
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {props.availableBatches.map((b: number) => (
+              <button
+                key={b}
+                onClick={() => props.toggleBatch(b)}
+                className={`px-3 py-2 rounded-lg border ${props.selectedBatches.includes(b) ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-700 border-gray-200'}`}
+              >
+                {b}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex gap-3">
+            <button onClick={props.handleApproveAnnouncement} className="btn btn-primary flex-1">
+              Approve & Send
+            </button>
+            <button onClick={() => props.setShowBatchModal(false)} className="btn btn-secondary flex-1">
+              Cancel
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={props.showRejectModal}
+        onClose={() => props.setShowRejectModal(false)}
+        title="Reject announcement"
+      >
+        <div className="space-y-4">
+          <p>Provide remarks explaining why the announcement is rejected:</p>
+          <textarea className="input h-28" value={props.rejectionRemarks} onChange={(e) => props.setRejectionRemarks(e.target.value)} />
+          <div className="flex gap-3">
+            <button onClick={props.handleRejectAnnouncement} className="btn btn-danger flex-1">
+              Reject
+            </button>
+            <button onClick={() => props.setShowRejectModal(false)} className="btn btn-secondary flex-1">
+              Cancel
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={props.showDeleteModal}
+        onClose={() => props.setShowDeleteModal(false)}
+        title="Delete announcement"
+      >
+        <div className="space-y-4">
+          <p>Are you sure you want to delete this announcement?</p>
+          <div className="flex gap-3">
+            <button onClick={props.handleDeleteAnnouncement} className="btn btn-danger flex-1">
+              Delete
+            </button>
+            <button onClick={() => props.setShowDeleteModal(false)} className="btn btn-secondary flex-1">
+              Cancel
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      <BroadcastModal
+        isOpen={props.showBroadcastModal}
+        onClose={() => props.setShowBroadcastModal(false)}
+        onSend={props.handleSendAnnouncement}
+        title="Send Portal-Wide Announcement"
+      />
+
+      <AddMentorModal
+        isOpen={props.showAddMentorModal}
+        onClose={() => props.setShowAddMentorModal(false)}
+        onSuccess={() => {
+          props.setShowAddMentorModal(false);
+          props.loadData(true);
+        }}
+      />
+    </>
   );
 }

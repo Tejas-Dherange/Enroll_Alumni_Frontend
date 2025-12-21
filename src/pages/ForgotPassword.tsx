@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { authAPI } from '../api/auth';
-import '../styles/auth.css'; // only if auth.css is not already imported globally
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');

@@ -13,6 +13,7 @@ export default function StudentsSection({ students, mentors, onBlockUser, onUnbl
     const [filterStatus, setFilterStatus] = useState('');
     const [filterMentor, setFilterMentor] = useState('');
     const [loadingUserId, setLoadingUserId] = useState<string | null>(null);
+    const [showMobileFilters, setShowMobileFilters] = useState(false);
 
     // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
@@ -113,87 +114,129 @@ export default function StudentsSection({ students, mentors, onBlockUser, onUnbl
             {/* Search and Filter Controls */}
             <div className="mb-6 bg-white p-5 rounded-xl shadow-md border border-gray-100">
 
-                {/* --- TOP: Filters Row --- */}
-                <div className="
-                        grid grid-cols-1 
-                        sm:grid-cols-2 
-                        md:grid-cols-3 
-                        lg:grid-cols-5 
-                        gap-4
-                    ">
-                    {/* Search */}
-                    <div className="flex flex-col">
-                        <label className="text-sm font-medium text-gray-700 mb-1">Search</label>
-                        <input
-                            type="text"
-                            placeholder="Name or email..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full border-gray-300 rounded-lg px-3 py-2 shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-                        />
+                {/* Mobile Filter Toggle */}
+                <div className="md:hidden flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-indigo-50 flex items-center justify-center">
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="20"
+                                height="20"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                className="text-indigo-600"
+                            >
+                                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 className="text-sm font-semibold text-slate-800">Filters</h3>
+                            <p className="text-xs text-slate-500">Narrow down list</p>
+                        </div>
                     </div>
-
-                    {/* Batch */}
-                    <div className="flex flex-col">
-                        <label className="text-sm font-medium text-gray-700 mb-1">Batch Year</label>
-                        <select
-                            value={filterBatch}
-                            onChange={(e) => setFilterBatch(e.target.value)}
-                            className="w-full border-gray-300 rounded-lg px-3 py-2 shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                    <button
+                        onClick={() => setShowMobileFilters(!showMobileFilters)}
+                        className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition text-sm font-medium"
+                    >
+                        Filters
+                        <svg
+                            className={`w-4 h-4 transform transition-transform ${showMobileFilters ? 'rotate-180' : 'rotate-0'}`}
+                            viewBox="0 0 20 20"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
                         >
-                            <option value="">All Batches</option>
-                            {uniqueBatches.map(batch => (
-                                <option key={batch} value={batch}>{batch}</option>
-                            ))}
-                        </select>
-                    </div>
+                            <path d="M5 8L10 13L15 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                    </button>
+                </div>
 
-                    {/* Status */}
-                    <div className="flex flex-col">
-                        <label className="text-sm font-medium text-gray-700 mb-1">Status</label>
-                        <select
-                            value={filterStatus}
-                            onChange={(e) => setFilterStatus(e.target.value)}
-                            className="w-full border-gray-300 rounded-lg px-3 py-2 shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-                        >
-                            <option value="">All Statuses</option>
-                            {uniqueStatuses.map(status => (
-                                <option key={status} value={status}>{status}</option>
-                            ))}
-                        </select>
-                    </div>
+                {/* Filters Container */}
+                <div className={`${showMobileFilters ? 'block' : 'hidden'} md:block`}>
+                    <div className="
+                            grid grid-cols-1 
+                            sm:grid-cols-2 
+                            md:grid-cols-3 
+                            lg:grid-cols-5 
+                            gap-4
+                        ">
+                        {/* Search */}
+                        <div className="flex flex-col">
+                            <label className="text-sm font-medium text-gray-700 mb-1">Search</label>
+                            <input
+                                type="text"
+                                placeholder="Name or email..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full border-gray-300 rounded-lg px-3 py-2 shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                            />
+                        </div>
 
-                    {/* Mentor */}
-                    <div className="flex flex-col">
-                        <label className="text-sm font-medium text-gray-700 mb-1">Mentor</label>
-                        <select
-                            value={filterMentor}
-                            onChange={(e) => setFilterMentor(e.target.value)}
-                            className="w-full border-gray-300 rounded-lg px-3 py-2 shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-                        >
-                            <option value="">All Mentors</option>
-                            {mentors
-                                .filter(m => m.status === "ACTIVE")
-                                .map(mentor => (
-                                    <option key={mentor.id} value={mentor.id}>
-                                        {mentor.firstName} {mentor.lastName}
-                                    </option>
+                        {/* Batch */}
+                        <div className="flex flex-col">
+                            <label className="text-sm font-medium text-gray-700 mb-1">Batch Year</label>
+                            <select
+                                value={filterBatch}
+                                onChange={(e) => setFilterBatch(e.target.value)}
+                                className="w-full border-gray-300 rounded-lg px-3 py-2 shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                            >
+                                <option value="">All Batches</option>
+                                {uniqueBatches.map(batch => (
+                                    <option key={batch} value={batch}>{batch}</option>
                                 ))}
-                        </select>
-                    </div>
+                            </select>
+                        </div>
 
-                    {/* Per Page Selector — now aligned in the main row */}
-                    <div className="flex flex-col">
-                        <label className="text-sm font-medium text-gray-700 mb-1">Per Page</label>
-                        <select
-                            value={pageSize}
-                            onChange={(e) => setPageSize(Number(e.target.value))}
-                            className="w-full border-gray-300 rounded-lg px-3 py-2 shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-                        >
-                            {[5, 10, 20, 50].map(n => (
-                                <option key={n} value={n}>{n}</option>
-                            ))}
-                        </select>
+                        {/* Status */}
+                        <div className="flex flex-col">
+                            <label className="text-sm font-medium text-gray-700 mb-1">Status</label>
+                            <select
+                                value={filterStatus}
+                                onChange={(e) => setFilterStatus(e.target.value)}
+                                className="w-full border-gray-300 rounded-lg px-3 py-2 shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                            >
+                                <option value="">All Statuses</option>
+                                {uniqueStatuses.map(status => (
+                                    <option key={status} value={status}>{status}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Mentor */}
+                        <div className="flex flex-col">
+                            <label className="text-sm font-medium text-gray-700 mb-1">Mentor</label>
+                            <select
+                                value={filterMentor}
+                                onChange={(e) => setFilterMentor(e.target.value)}
+                                className="w-full border-gray-300 rounded-lg px-3 py-2 shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                            >
+                                <option value="">All Mentors</option>
+                                {mentors
+                                    .filter(m => m.status === "ACTIVE")
+                                    .map(mentor => (
+                                        <option key={mentor.id} value={mentor.id}>
+                                            {mentor.firstName} {mentor.lastName}
+                                        </option>
+                                    ))}
+                            </select>
+                        </div>
+
+                        {/* Per Page Selector */}
+                        <div className="flex flex-col">
+                            <label className="text-sm font-medium text-gray-700 mb-1">Per Page</label>
+                            <select
+                                value={pageSize}
+                                onChange={(e) => setPageSize(Number(e.target.value))}
+                                className="w-full border-gray-300 rounded-lg px-3 py-2 shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                            >
+                                {[5, 10, 20, 50].map(n => (
+                                    <option key={n} value={n}>{n}</option>
+                                ))}
+                            </select>
+                        </div>
                     </div>
                 </div>
 
@@ -209,7 +252,8 @@ export default function StudentsSection({ students, mentors, onBlockUser, onUnbl
                 </div>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden" id="students-table">
+            {/* --- DESKTOP: Table View --- */}
+            <div className="hidden lg:block bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden" id="students-table">
                 <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
                         <tr>
@@ -369,6 +413,79 @@ export default function StudentsSection({ students, mentors, onBlockUser, onUnbl
                         )}
                     </tbody>
                 </table>
+            </div>
+
+            {/* --- MOBILE: Card View --- */}
+            <div className="lg:hidden space-y-4">
+                {paginatedStudents.map((student) => (
+                    <div key={student.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+                        {/* Header: Avatar, Name, Status */}
+                        <div className="flex items-start justify-between mb-4">
+                            <div className="flex items-start gap-3">
+                                <div className="h-10 w-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
+                                    <span className="text-white font-semibold">{student.firstName?.[0]}{student.lastName?.[0]}</span>
+                                </div>
+                                <div>
+                                    <h3 className="font-semibold text-gray-900">{student.firstName} {student.lastName}</h3>
+                                    <p className="text-sm text-gray-500 break-all">{student.email}</p>
+                                    <span className="text-xs text-gray-400">Batch {student.batchYear}</span>
+                                </div>
+                            </div>
+
+                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium flex-shrink-0 ${student.status?.toUpperCase() === 'ACTIVE'
+                                ? 'bg-green-100 text-green-800' :
+                                student.status?.toUpperCase() === 'BLOCKED'
+                                    ? 'bg-red-100 text-red-800' :
+                                    'bg-yellow-100 text-yellow-800'
+                                }`}>
+                                {student.status}
+                            </span>
+                        </div>
+
+                        {/* Body: Key details */}
+                        <div className="grid grid-cols-2 gap-y-3 text-sm text-gray-600 mb-4 border-t border-b border-gray-50 py-3">
+                            <div className="col-span-2">
+                                <span className="block text-xs font-medium text-gray-400 uppercase">College</span>
+                                <span className="text-gray-900">{student.college}</span>
+                            </div>
+                            <div>
+                                <span className="block text-xs font-medium text-gray-400 uppercase">City</span>
+                                <span className="text-gray-900">{student.city || '-'}</span>
+                            </div>
+                            <div>
+                                <span className="block text-xs font-medium text-gray-400 uppercase">Mentor</span>
+                                <span className="text-gray-900">{student.mentor?.name || 'Not assigned'}</span>
+                            </div>
+                        </div>
+
+                        {/* Footer: Actions */}
+                        <div className="flex justify-end">
+                            {student.status?.toUpperCase() === 'BLOCKED' ? (
+                                <button
+                                    onClick={() => handleUnblockUser(student.id)}
+                                    disabled={loadingUserId === student.id}
+                                    className="w-full inline-flex justify-center items-center gap-2 px-4 py-2.5 bg-green-50 hover:bg-green-100 text-green-700 font-medium rounded-lg transition-colors border border-green-200"
+                                >
+                                    {loadingUserId === student.id ? 'Unblocking...' : 'Unblock User'}
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={() => handleBlockUser(student.id)}
+                                    disabled={loadingUserId === student.id}
+                                    className="w-full inline-flex justify-center items-center gap-2 px-4 py-2.5 bg-red-50 hover:bg-red-100 text-red-700 font-medium rounded-lg transition-colors border border-red-200"
+                                >
+                                    {loadingUserId === student.id ? 'Blocking...' : 'Block User'}
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                ))}
+
+                {paginatedStudents.length === 0 && (
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
+                        <p className="text-gray-500">No students found.</p>
+                    </div>
+                )}
             </div>
 
             {/* Pagination Controls */}
