@@ -5,6 +5,10 @@ export const announcementAPI = {
         const response = await api.post('/announcements/create', { title, content });
         return response.data;
     },
+    createMentorAnnouncement: async (title: string, content: string) => {
+        const response = await api.post('/announcements/create-mentor', { title, content });
+        return response.data;
+    },
     getFeed: async () => {
         const response = await api.get('/announcements/feed');
         return response.data;

@@ -1,6 +1,7 @@
 // src/pages/MentorDashboard.tsx
 import { useEffect, useState } from 'react';
 import { mentorAPI } from '../api/mentor';
+import { announcementAPI } from '../api/announcements';
 import BroadcastModal from '../components/BroadcastModal';
 import ChatWidget from '../components/ChatWidget';
 import { MentorTableSkeleton } from '../components/DashboardSkeleton';
@@ -11,6 +12,7 @@ export default function MentorDashboard() {
     const [loading, setLoading] = useState(false);
     const [showBroadcastModal, setShowBroadcastModal] = useState(false);
     const [broadcastTarget, setBroadcastTarget] = useState<'students' | 'mentors'>('students');
+    const [showAnnouncementModal, setShowAnnouncementModal] = useState(false);
 
     // Search + Filters
     const [searchQuery, setSearchQuery] = useState('');
@@ -79,6 +81,17 @@ export default function MentorDashboard() {
         else await mentorAPI.broadcastToMentors(title, content);
     };
 
+    const handleCreateAnnouncement = async (title: string, content: string) => {
+        try {
+            await announcementAPI.createMentorAnnouncement(title, content);
+            alert('Announcement created and published successfully!');
+            setShowAnnouncementModal(false);
+        } catch (error) {
+            console.error('Failed to create announcement:', error);
+            alert('Failed to create announcement. Please try again.');
+        }
+    };
+
     const handleBlockStudent = async (id: string) => {
         if (!confirm("Are you sure?")) return;
         await mentorAPI.blockStudent(id);
@@ -105,6 +118,16 @@ export default function MentorDashboard() {
                     - on sm+ it shows inline and sizes naturally
                 */}
                 <div className="w-full sm:w-auto flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                    <button
+                        onClick={() => setShowAnnouncementModal(true)}
+                        className="w-full sm:w-auto flex-1 sm:flex-none px-5 py-2.5 rounded-lg bg-gradient-to-r from-green-600 to-emerald-600 
+                        text-white font-semibold shadow-md hover:shadow-lg hover:-translate-y-0.5 
+                        transition-all duration-200 whitespace-nowrap"
+                        aria-label="Create announcement"
+                    >
+                        📢 Create Announcement
+                    </button>
+
                     <button
                         onClick={() => {
                             setBroadcastTarget('students');
@@ -135,7 +158,7 @@ export default function MentorDashboard() {
 
             {/* ---------------- MOBILE FILTER UI ---------------- */}
             <div className="md:hidden mb-5">
-                
+
                 {/* Search Bar */}
                 <div className="bg-white p-4 rounded-xl shadow border border-gray-200">
                     <input
@@ -179,11 +202,10 @@ export default function MentorDashboard() {
                                         <button
                                             key={s}
                                             onClick={() => setFilterStatus(s)}
-                                            className={`px-3 py-1.5 rounded-full text-sm border transition ${
-                                                active
+                                            className={`px-3 py-1.5 rounded-full text-sm border transition ${active
                                                     ? "bg-indigo-600 text-white border-indigo-600"
                                                     : "bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100"
-                                            }`}
+                                                }`}
                                         >
                                             {label}
                                         </button>
@@ -311,13 +333,12 @@ export default function MentorDashboard() {
                                             <td className="px-6 py-4 text-sm text-gray-500">{s.city}</td>
                                             <td className="px-6 py-4 text-sm text-gray-500">{s.batchYear}</td>
                                             <td className="px-6 py-4">
-                                                <span className={`px-2 py-1 text-xs rounded-full ${
-                                                    s.status?.toUpperCase() === "ACTIVE"
+                                                <span className={`px-2 py-1 text-xs rounded-full ${s.status?.toUpperCase() === "ACTIVE"
                                                         ? "bg-green-100 text-green-800"
                                                         : s.status?.toUpperCase() === "BLOCKED"
-                                                        ? "bg-red-100 text-red-800"
-                                                        : "bg-yellow-100 text-yellow-800"
-                                                }`}>
+                                                            ? "bg-red-100 text-red-800"
+                                                            : "bg-yellow-100 text-yellow-800"
+                                                    }`}>
                                                     {s.status}
                                                 </span>
                                             </td>
@@ -347,13 +368,12 @@ export default function MentorDashboard() {
                                         </div>
                                     </div>
 
-                                    <span className={`px-2 py-1 text-xs rounded-full ${
-                                        s.status?.toUpperCase() === "ACTIVE"
+                                    <span className={`px-2 py-1 text-xs rounded-full ${s.status?.toUpperCase() === "ACTIVE"
                                             ? "bg-green-100 text-green-800"
                                             : s.status?.toUpperCase() === "BLOCKED"
-                                            ? "bg-red-100 text-red-800"
-                                            : "bg-yellow-100 text-yellow-800"
-                                    }`}>
+                                                ? "bg-red-100 text-red-800"
+                                                : "bg-yellow-100 text-yellow-800"
+                                        }`}>
                                         {s.status}
                                     </span>
                                 </div>
@@ -372,6 +392,13 @@ export default function MentorDashboard() {
             )}
 
             {/* Modals */}
+            <BroadcastModal
+                isOpen={showAnnouncementModal}
+                onClose={() => setShowAnnouncementModal(false)}
+                onSend={handleCreateAnnouncement}
+                title="Create Public Announcement"
+            />
+
             <BroadcastModal
                 isOpen={showBroadcastModal}
                 onClose={() => setShowBroadcastModal(false)}

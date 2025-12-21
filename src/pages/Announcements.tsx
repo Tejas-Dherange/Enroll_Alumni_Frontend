@@ -142,6 +142,14 @@ export default function Announcements() {
                                                 <div className="inline-flex items-center gap-1.5">
                                                     <User className="h-4 w-4" />
                                                     <span>{announcement.author}</span>
+                                                    {announcement.authorRole && (
+                                                        <span className={`ml-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${announcement.authorRole === 'MENTOR'
+                                                                ? 'bg-purple-100 text-purple-700'
+                                                                : 'bg-blue-100 text-blue-700'
+                                                            }`}>
+                                                            {announcement.authorRole === 'MENTOR' ? 'Mentor' : 'Student'}
+                                                        </span>
+                                                    )}
                                                 </div>
                                                 <span className="text-gray-400">•</span>
                                                 <div className="inline-flex items-center gap-1.5">
