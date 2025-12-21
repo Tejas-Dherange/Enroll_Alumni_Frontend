@@ -57,6 +57,30 @@ export default function Header() {
         setShowMobileMenu(false);
     };
 
+    const handleLogoClick = (e: React.MouseEvent) => {
+  e.preventDefault();
+
+  if (!isAuthenticated || !user) {
+    navigate('/');
+    return;
+  }
+
+  switch (user.role?.toUpperCase()) {
+    case 'ADMIN':
+      navigate('/admin');
+      break;
+    case 'MENTOR':
+      navigate('/mentor');
+      break;
+    case 'STUDENT':
+      navigate('/student');
+      break;
+    default:
+      navigate('/');
+  }
+};
+
+
     const handleLogout = () => {
         logout();
         navigate('/login');
@@ -187,7 +211,11 @@ export default function Header() {
                 <div className="flex items-center justify-between h-20">
 
                     {/* Left: Logo */}
-                    <Link to="/" className="flex items-center space-x-3 group z-50">
+                  <Link
+                    to="/"
+                    onClick={handleLogoClick}
+                    className="flex items-center space-x-3 group z-50"
+                  >
                         <div className="relative">
                             <div className="absolute inset-0 bg-indigo-500 blur-lg opacity-0 group-hover:opacity-20 transition-opacity duration-300 rounded-full"></div>
                             <img

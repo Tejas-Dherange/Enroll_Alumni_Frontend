@@ -47,6 +47,8 @@ export default function AdminDashboard() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showAddMentorModal, setShowAddMentorModal] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
+  const [isApprovingAnnouncement, setIsApprovingAnnouncement] = useState(false);
+  const [isDeletingAnnouncement, setIsDeletingAnnouncement] = useState(false);
 
   const [selectedStudent, setSelectedStudent] = useState<any | null>(null);
   const [selectedMentor, setSelectedMentor] = useState<string>('');
@@ -229,14 +231,20 @@ export default function AdminDashboard() {
 
   const handleApproveAnnouncement = async () => {
     if (!selectedAnnouncement) return;
+    setIsApprovingAnnouncement(true);
+    try {
+      await adminAPI.approveAnnouncement(selectedAnnouncement.id, selectedBatches);
 
-    await adminAPI.approveAnnouncement(selectedAnnouncement.id, selectedBatches);
+      setSelectedAnnouncement(null);
+      setShowBatchModal(false);
+      setSelectedBatches([]);
 
-    setSelectedAnnouncement(null);
-    setShowBatchModal(false);
-    setSelectedBatches([]);
-
-    refreshTabs('pending-announcements', 'announcements');
+      refreshTabs('pending-announcements', 'announcements');
+    } catch (error) {
+      console.error('Failed to approve announcement:', error);
+    } finally {
+      setIsApprovingAnnouncement(false);
+    }
   };
 
   const handleRejectAnnouncement = async () => {
@@ -262,10 +270,16 @@ export default function AdminDashboard() {
 
   const handleDeleteAnnouncement = async () => {
     if (!selectedAnnouncement) return;
-
-    await adminAPI.deleteAnnouncement(selectedAnnouncement.id);
-    setShowDeleteModal(false);
-    refreshTabs('announcements');
+    setIsDeletingAnnouncement(true);
+    try {
+      await adminAPI.deleteAnnouncement(selectedAnnouncement.id);
+      setShowDeleteModal(false);
+      refreshTabs('announcements');
+    } catch (error) {
+      console.error('Failed to delete announcement:', error);
+    } finally {
+      setIsDeletingAnnouncement(false);
+    }
   };
 
   const toggleBatch = (b: number) =>
@@ -736,6 +750,7 @@ export default function AdminDashboard() {
           selectedBatches={selectedBatches}
           toggleBatch={toggleBatch}
           handleApproveAnnouncement={handleApproveAnnouncement}
+          isApprovingAnnouncement={isApprovingAnnouncement}
           showRejectModal={showRejectModal}
           setShowRejectModal={setShowRejectModal}
           rejectionRemarks={rejectionRemarks}
@@ -745,6 +760,7 @@ export default function AdminDashboard() {
           setShowDeleteModal={setShowDeleteModal}
           selectedAnnouncement={selectedAnnouncement}
           handleDeleteAnnouncement={handleDeleteAnnouncement}
+          isDeletingAnnouncement={isDeletingAnnouncement}
           showBroadcastModal={showBroadcastModal}
           setShowBroadcastModal={setShowBroadcastModal}
           handleSendAnnouncement={handleSendAnnouncement}
@@ -1045,8 +1061,22 @@ function Modals(props: any) {
           </div>
 
           <div className="flex gap-3">
-            <button onClick={props.handleApproveAnnouncement} className="btn btn-primary flex-1">
-              Approve & Send
+            <button
+              onClick={props.handleApproveAnnouncement}
+              className="btn btn-primary flex-1 inline-flex items-center justify-center gap-2"
+              disabled={props.isApprovingAnnouncement}
+            >
+              {props.isApprovingAnnouncement ? (
+                <>
+                  <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Approving...
+                </>
+              ) : (
+                'Approve & Send'
+              )}
             </button>
             <button onClick={() => props.setShowBatchModal(false)} className="btn btn-secondary flex-1">
               Cancel
@@ -1082,8 +1112,22 @@ function Modals(props: any) {
         <div className="space-y-4">
           <p>Are you sure you want to delete this announcement?</p>
           <div className="flex gap-3">
-            <button onClick={props.handleDeleteAnnouncement} className="btn btn-danger flex-1">
-              Delete
+            <button
+              onClick={props.handleDeleteAnnouncement}
+              className="btn btn-danger flex-1 inline-flex items-center justify-center gap-2"
+              disabled={props.isDeletingAnnouncement}
+            >
+              {props.isDeletingAnnouncement ? (
+                <>
+                  <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Deleting...
+                </>
+              ) : (
+                'Delete'
+              )}
             </button>
             <button onClick={() => props.setShowDeleteModal(false)} className="btn btn-secondary flex-1">
               Cancel

@@ -1,4 +1,3 @@
-// src/pages/StudentDashboard.tsx
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
@@ -23,10 +22,10 @@ import EditProfileModal from '../components/EditProfileModal';
 
 export default function StudentDashboard() {
   const { user } = useAuthStore();
+
   const [myAnnouncements, setMyAnnouncements] = useState<any[]>([]);
   const [mentor, setMentor] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
-  const [studentProfile, setStudentProfile] = useState<any | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
 
   useEffect(() => {
@@ -34,18 +33,12 @@ export default function StudentDashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /**
-   * Load dashboard data with optional cache usage.
-   * If forceRefresh=true, bypass cache and fetch fresh data.
-   */
   const loadData = async (forceRefresh = false) => {
     try {
-      // Try cache
       if (!forceRefresh) {
         const cached = cache.get<any>('student-dashboard');
         if (cached) {
           setMyAnnouncements(cached.announcements || []);
-          setStudentProfile(cached.profile || null);
           setMentor(cached.mentor || null);
           setLoading(false);
           return;
@@ -54,42 +47,34 @@ export default function StudentDashboard() {
 
       setLoading(true);
 
-      // fetch announcements + profile in parallel
       const [myData, profileRes] = await Promise.all([
         announcementAPI.getMyAnnouncements(),
         api.get('/student/profile'),
       ]);
 
       setMyAnnouncements(myData || []);
-      setStudentProfile(profileRes?.data ?? null);
 
-      // fetch mentor only if assigned
       let mentorData = null;
-      if (profileRes?.data?.profile?.assignedMentorId || user?.profile?.assignedMentorId) {
+      const assignedMentorId =
+        profileRes?.data?.profile?.assignedMentorId ||
+        user?.profile?.assignedMentorId;
+
+      if (assignedMentorId) {
         try {
           const mentorRes = await api.get('/student/mentor');
           mentorData = mentorRes?.data ?? null;
           setMentor(mentorData);
-        } catch (err) {
-          console.log('No mentor assigned or failed to fetch mentor');
+        } catch {
           setMentor(null);
         }
-      } else {
-        setMentor(null);
       }
 
-      // cache results (small TTL may be implemented inside your cache util)
-      try {
-        cache.set('student-dashboard', {
-          announcements: myData,
-          profile: profileRes?.data ?? null,
-          mentor: mentorData,
-        });
-      } catch {
-        // ignore cache errors
-      }
-    } catch (error) {
-      console.error('Failed to load data:', error);
+      cache.set('student-dashboard', {
+        announcements: myData,
+        mentor: mentorData,
+      });
+    } catch (err) {
+      console.error('Failed to load dashboard:', err);
     } finally {
       setLoading(false);
     }
@@ -100,280 +85,145 @@ export default function StudentDashboard() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* PAGE HEADING */}
+
+        {/* HEADER */}
         <header className="mb-8">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-            Student Dashboard
+            Welcome, {user?.firstName}!
           </h1>
-          <p className="text-gray-600 mt-2">Track your announcements and connect with your mentor</p>
+          <p className="text-gray-600 mt-2">
+            Track your announcements and manage your profile
+          </p>
         </header>
 
         {/* ALERTS */}
         <div className="space-y-3 mb-8">
           {!user?.emailVerified && (
-            <div className="rounded-xl bg-yellow-50 border border-yellow-200 p-4 shadow-sm">
-              <div className="flex items-start gap-3">
-                <AlertCircle className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-medium text-yellow-800">Email Verification Required</p>
-                  <p className="text-sm text-yellow-700 mt-1">Please verify your email to create announcements.</p>
-                </div>
-              </div>
-            </div>
+            <AlertBox
+              color="yellow"
+              title="Email Verification Required"
+              text="Please verify your email to create announcements."
+            />
           )}
 
           {user?.status === 'pending' && (
-            <div className="rounded-xl bg-blue-50 border border-blue-200 p-4 shadow-sm">
-              <div className="flex items-start gap-3">
-                <AlertCircle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-medium text-blue-800">Account Pending Approval</p>
-                  <p className="text-sm text-blue-700 mt-1">Your account is pending admin approval. You'll be notified once approved.</p>
-                </div>
-              </div>
-            </div>
+            <AlertBox
+              color="blue"
+              title="Account Pending Approval"
+              text="Your account is pending admin approval."
+            />
           )}
         </div>
 
-        {/* QUICK ACCESS SECTION */}
+        {/* QUICK ACTIONS */}
         {user?.emailVerified && user?.status === 'ACTIVE' && (
-          <section className="mb-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Create Announcement */}
-              <Link to="/announcements/create" className="block group">
-                <div className="rounded-2xl p-6 bg-white border border-gray-200 shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-                  <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg">
-                      <Megaphone className="w-7 h-7 text-white" />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-bold text-lg text-gray-900 group-hover:text-indigo-600 transition-colors">Create Announcement</h3>
-                      <p className="text-sm text-gray-600 mt-1">Share updates with the community</p>
-                    </div>
-                  </div>
-                </div>
-              </Link>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <QuickCard
+              to="/announcements/create"
+              title="Create Announcement"
+              subtitle="Share updates with the community"
+              icon={<Megaphone className="w-7 h-7 text-white" />}
+              gradient="from-blue-500 to-cyan-600"
+            />
 
-              {/* Directory */}
-              <Link to="/directory" className="block group">
-                <div className="rounded-2xl p-6 bg-white border border-gray-200 shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-                  <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center shadow-lg">
-                      <User className="w-7 h-7 text-white" />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-bold text-lg text-gray-900 group-hover:text-blue-600 transition-colors">Find Students</h3>
-                      <p className="text-sm text-gray-600 mt-1">Connect with your peers</p>
-                    </div>
-                  </div>
-                </div>
-              </Link>
-            </div>
-          </section>
+            <QuickCard
+              to="/directory"
+              title="Find Students"
+              subtitle="Connect with your peers"
+              icon={<User className="w-7 h-7 text-white" />}
+              gradient="from-blue-500 to-cyan-600"
+            />
+          </div>
         )}
 
         {/* MAIN GRID */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* LEFT COLUMN — ANNOUNCEMENTS */}
-          <div className="lg:col-span-2 space-y-6">
-            <div>
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-3">
-                <h2 className="text-2xl font-bold text-gray-900">My Announcements</h2>
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-indigo-100 text-indigo-700 rounded-full text-sm font-medium self-start sm:self-auto">
-                  <span className="h-2 w-2 rounded-full bg-indigo-600"></span>
-                  {myAnnouncements.length} announcement{myAnnouncements.length !== 1 ? 's' : ''}
-                </div>
-              </div>
 
-              <div className="space-y-4">
-                {myAnnouncements.length === 0 ? (
-                  <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 sm:p-16">
-                    <div className="flex flex-col items-center justify-center text-center">
-                      <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center mb-4">
-                        <Megaphone className="h-8 w-8 text-indigo-600" />
-                      </div>
-                      <p className="text-lg font-medium text-gray-900 mb-1">No announcements yet</p>
-                      <p className="text-sm text-gray-500">Create your first announcement to get started</p>
-                    </div>
-                  </div>
-                ) : (
-                  myAnnouncements.map((announcement) => (
-                    <article
-                      key={announcement.id}
-                      className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 shadow-md hover:shadow-lg transition-all duration-200 overflow-hidden"
-                    >
-                      {/* HEADER */}
-                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-3 gap-3">
-                        <h3 className="font-bold text-xl text-gray-900 break-words">{announcement.title}</h3>
+          {/* ANNOUNCEMENTS */}
+          <div className="lg:col-span-2 space-y-4">
+            <h2 className="text-2xl font-bold text-gray-900">
+              My Announcements
+            </h2>
 
-                        {/* Status badge */}
-                        <span
-                          className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium shrink-0 self-start sm:self-auto ${announcement.status?.toLowerCase() === 'approved'
-                            ? 'bg-green-100 text-green-800 ring-1 ring-green-600/20'
-                            : announcement.status?.toLowerCase() === 'rejected'
-                              ? 'bg-red-100 text-red-800 ring-1 ring-red-600/20'
-                              : 'bg-yellow-100 text-yellow-800 ring-1 ring-yellow-600/20'
-                            }`}
-                        >
-                          <span className={`mr-1.5 h-1.5 w-1.5 rounded-full ${announcement.status?.toLowerCase() === 'approved' ? 'bg-green-600' :
-                            announcement.status?.toLowerCase() === 'rejected' ? 'bg-red-600' :
-                              'bg-yellow-600'
-                            }`}></span>
-                          {announcement.status}
-                        </span>
-                      </div>
-
-                      {/* CONTENT */}
-                      <div className="bg-gray-50 rounded-lg p-4 mb-3 border border-gray-100 overflow-x-auto">
-                        <p className="text-gray-800 leading-relaxed whitespace-pre-wrap break-words">{announcement.content}</p>
-                      </div>
-
-                      {/* REJECTION REMARKS */}
-                      {announcement.rejectionRemarks && (
-                        <div className="mt-3 p-4 bg-red-50 rounded-lg border border-red-100">
-                          <div className="flex items-start gap-2">
-                            <AlertCircle className="h-4 w-4 text-red-600 flex-shrink-0 mt-0.5" />
-                            <div>
-                              <p className="text-sm font-medium text-red-800">Rejection Feedback</p>
-                              <p className="text-sm text-red-700 mt-1 break-words">{announcement.rejectionRemarks}</p>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* META */}
-                      <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between">
-                        <div className="text-sm text-gray-500">{new Date(announcement.createdAt).toLocaleString?.() || ''}</div>
-                        <div className="text-sm">
-                          {/* optional actions could go here */}
-                        </div>
-                      </div>
-                    </article>
-                  ))
-                )}
-              </div>
-
-
-            </div>
+            {myAnnouncements.length === 0 ? (
+              <EmptyState />
+            ) : (
+              myAnnouncements.map((a) => (
+                <AnnouncementCard key={a.id} announcement={a} />
+              ))
+            )}
           </div>
 
-          {/* RIGHT COLUMN */}
+          {/* SIDEBAR */}
           <aside className="space-y-6">
-            {/* Mentor card */}
+
+            {/* MENTOR */}
             {mentor && (
-              <div className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 shadow-md">
+              <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-md">
                 <div className="flex items-center gap-2 mb-4">
-                  <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+                  <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
                     <UserCheck className="w-5 h-5 text-white" />
                   </div>
-                  <h3 className="font-bold text-lg text-gray-900">Your Mentor</h3>
+                  <h3 className="font-bold text-lg">Your Mentor</h3>
                 </div>
 
-                <div className="space-y-3">
-                  <div>
-                    <p className="font-semibold text-gray-900 text-lg break-words">{mentor.firstName} {mentor.lastName}</p>
-                    <p className="text-sm text-gray-600 mt-1 break-all">{mentor.email}</p>
-                  </div>
+                <p className="font-semibold">{mentor.firstName} {mentor.lastName}</p>
+                <p className="text-sm text-gray-600">{mentor.email}</p>
 
-                  <Link
-                    to={`/messages?with=${mentor.id}`}
-                    className="mt-4 inline-flex items-center justify-center gap-2 w-full px-4 py-3 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-medium shadow-md hover:shadow-lg transition-all duration-150"
-                  >
-                    <MessageSquare className="w-4 h-4" />
-                    Message Mentor
-                  </Link>
-                </div>
+                <Link
+                  to={`/messages?with=${mentor.id}`}
+                  className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 text-white px-4 py-3 hover:bg-indigo-700 transition"
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  Message Mentor
+                </Link>
               </div>
             )}
 
-            {/* Profile card */}
-            <div className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 shadow-md">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-bold text-lg text-gray-900">Your Profile</h3>
+            {/* PROFILE CARD */}
+            <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-md">
+              <div className="flex justify-between mb-4">
+                <h3 className="font-bold text-lg">Your Profile</h3>
                 <button
                   onClick={() => setShowEditModal(true)}
-                  className="p-2 hover:bg-indigo-50 rounded-lg transition-colors group"
-                  aria-label="Edit profile"
+                  className="p-2 hover:bg-indigo-50 rounded-lg"
                 >
-                  <Edit className="w-4 h-4 text-gray-500 group-hover:text-indigo-600" />
+                  <Edit className="w-4 h-4 text-gray-500" />
                 </button>
               </div>
 
-              <div className="space-y-3">
-                <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg overflow-hidden">
-                  <Building2 className="w-5 h-5 text-indigo-600 flex-shrink-0 mt-0.5" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">College</p>
-                    <p className="text-sm font-medium text-gray-900 mt-1 break-words">{studentProfile?.profile?.college || '—'}</p>
+              <p className="font-semibold text-lg">
+                {user?.firstName} {user?.lastName}
+              </p>
+              <p className="text-sm text-gray-600">{user?.email}</p>
+
+              <ProfileRow icon={<Building2 className='text-blue-500'/>} label="College" value={user?.profile?.college} />
+              <ProfileRow icon={<MapPin className='text-blue-500'/>} label="City" value={user?.profile?.city} />
+              <ProfileRow icon={<GraduationCap className='text-blue-500'/>} label="Batch" value={user?.profile?.batchYear} />
+
+              {(user?.linkedInUrl || user?.githubUrl) && (
+                <div className="mt-4 pt-3 border-t">
+                  <p className="text-xs text-gray-500 mb-2 uppercase">Social</p>
+                  <div className="flex gap-2">
+                    {user?.linkedInUrl && (
+                      <a href={user.linkedInUrl} target="_blank" rel="noreferrer" className="icon-btn blue">
+                        <Linkedin className="w-4 h-4" />
+                      </a>
+                    )}
+                    {user?.githubUrl && (
+                      <a href={user.githubUrl} target="_blank" rel="noreferrer" className="icon-btn gray">
+                        <Github className="w-4 h-4" />
+                      </a>
+                    )}
                   </div>
                 </div>
-
-                <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg overflow-hidden">
-                  <MapPin className="w-5 h-5 text-indigo-600 flex-shrink-0 mt-0.5" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">City</p>
-                    <p className="text-sm font-medium text-gray-900 mt-1 break-words">{studentProfile?.profile?.city || '—'}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg overflow-hidden">
-                  <GraduationCap className="w-5 h-5 text-indigo-600 flex-shrink-0 mt-0.5" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Batch</p>
-                    <p className="text-sm font-medium text-gray-900 mt-1">{studentProfile?.profile?.batchYear || '—'}</p>
-                  </div>
-                </div>
-
-                {/* Social Links */}
-                {(user?.linkedInUrl || user?.githubUrl) && (
-                  <div className="pt-3 border-t border-gray-200">
-                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Social Links</p>
-                    <div className="flex gap-2">
-                      {user?.linkedInUrl && (
-                        <a
-                          href={user.linkedInUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="p-2 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
-                          aria-label="LinkedIn profile"
-                        >
-                          <Linkedin className="w-4 h-4 text-blue-600" />
-                        </a>
-                      )}
-                      {user?.githubUrl && (
-                        <a
-                          href={user.githubUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="p-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-                          aria-label="GitHub profile"
-                        >
-                          <Github className="w-4 h-4 text-gray-800" />
-                        </a>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
+              )}
             </div>
-
-            {/* Account pending / other small card */}
-            {user?.status === 'pending' && (
-              <div className="rounded-xl bg-blue-50 border border-blue-200 p-4 shadow-sm">
-                <div className="flex items-start gap-3">
-                  <AlertCircle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="font-medium text-blue-800">Account Pending Approval</p>
-                    <p className="text-sm text-blue-700 mt-1">Your account is pending admin approval. You'll be notified once approved.</p>
-                  </div>
-                </div>
-              </div>
-            )}
           </aside>
         </div>
       </div>
 
-      {/* Edit Profile Modal */}
+      {/* EDIT PROFILE MODAL */}
       <EditProfileModal
         isOpen={showEditModal}
         onClose={() => setShowEditModal(false)}
@@ -383,5 +233,70 @@ export default function StudentDashboard() {
         }}
       />
     </div>
+  );
+}
+
+/* ---------------- HELPERS ---------------- */
+
+function ProfileRow({ icon, label, value }: any) {
+  return (
+    <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg mt-3">
+      <div className="text-indigo-600">{icon}</div>
+      <div>
+        <p className="text-xs uppercase text-gray-500">{label}</p>
+        <p className="text-sm font-medium">{value || '—'}</p>
+      </div>
+    </div>
+  );
+}
+
+function AlertBox({ color, title, text }: any) {
+  const colors: any = {
+    yellow: 'bg-yellow-50 border-yellow-200 text-yellow-800',
+    blue: 'bg-blue-50 border-blue-200 text-blue-800',
+  };
+
+  return (
+    <div className={`rounded-xl border p-4 ${colors[color]}`}>
+      <p className="font-medium">{title}</p>
+      <p className="text-sm mt-1">{text}</p>
+    </div>
+  );
+}
+
+function QuickCard({ to, title, subtitle, icon, gradient }: any) {
+  return (
+    <Link to={to} className="block">
+      <div className="bg-white border rounded-2xl p-6 shadow-md hover:shadow-xl transition hover:-translate-y-1">
+        <div className="flex gap-4">
+          <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${gradient} flex items-center justify-center`}>
+            {icon}
+          </div>
+          <div>
+            <h3 className="font-bold text-lg">{title}</h3>
+            <p className="text-sm text-gray-600">{subtitle}</p>
+          </div>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+function EmptyState() {
+  return (
+    <div className="bg-white border rounded-2xl p-12 text-center shadow-sm">
+      <Megaphone className="mx-auto mb-3 text-indigo-500" />
+      <p className="font-semibold">No announcements yet</p>
+      <p className="text-sm text-gray-500">Create one to get started</p>
+    </div>
+  );
+}
+
+function AnnouncementCard({ announcement }: any) {
+  return (
+    <article className="bg-white border rounded-2xl p-5 shadow-md">
+      <h3 className="font-bold text-lg mb-2">{announcement.title}</h3>
+      <p className="text-sm whitespace-pre-wrap">{announcement.content}</p>
+    </article>
   );
 }

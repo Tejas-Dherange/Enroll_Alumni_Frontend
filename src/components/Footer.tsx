@@ -111,10 +111,10 @@ export default function Footer({ className = "" }) {
                 <li className="flex items-center space-x-3">
                   <Mail className="w-5 h-5 text-indigo-400" />
                   <a
-                    href="mailto:communications@enrollengineer.com"
+                    href="mailto:support@enrollengineer.in"
                     className="hover:text-gray-200 transition text-sm break-words"
                   >
-                    communications@enrollengineer.com
+                    support@enrollengineer.in
                   </a>
                 </li>
               </ul>
@@ -126,10 +126,10 @@ export default function Footer({ className = "" }) {
             <div className="flex flex-col md:flex-row items-center justify-between gap-3">
               <p className="text-gray-400 text-sm text-center md:text-left">© {year} EnrollEngineer. All rights reserved.</p>
 
-              <p className="text-gray-400 text-sm text-center md:text-right">
+              {/* <p className="text-gray-400 text-sm text-center md:text-right">
                 Built with <span className="text-pink-500">♥</span> by{" "}
                 <span className="text-indigo-400 ml-1">@EnrollEngineer</span>
-              </p>
+              </p> */}
             </div>
           </div>
         </div>

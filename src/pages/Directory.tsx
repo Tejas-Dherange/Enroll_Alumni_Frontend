@@ -377,75 +377,114 @@ export default function Directory() {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in">
+
             {students.map((student) => (
-              <Link key={student.id} to={""} className="group">
-                <article className="bg-gradient-to-br from-white via-white to-white rounded-2xl shadow-md overflow-hidden border border-gray-100 hover:shadow-lg transform transition hover:-translate-y-1 h-full flex flex-col">
-                  {/* Card header with initials */}
-                  <div className="flex items-center gap-4 p-5">
-                    <div
-                      className="w-14 h-14 rounded-xl flex-shrink-0 flex items-center justify-center text-white font-bold"
-                      style={{ background: `linear-gradient(135deg,#6366f1, #7c3aed)` }}
-                    >
-                      {getInitials(student)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-lg font-semibold text-slate-900 truncate">
-                        {student.firstName} {student.lastName}
-                      </h3>
-                      <p className="text-xs text-slate-500 mt-1 truncate">{student.email || "—"}</p>
-                    </div>
-                    <div>
-                      <span className="px-3 py-1 text-sm rounded-full bg-indigo-100 text-indigo-700 font-medium">
-                        {student.batchYear || "—"}
-                      </span>
-                    </div>
-                  </div>
+              <Link key={student.id} to="" className="group relative">
+  <article
+  className="
+    relative h-full flex flex-col
+    rounded-2xl bg-white
+    border border-gray-200
+    shadow-sm
+    transition-all duration-300
+    hover:-translate-y-1 hover:shadow-lg
+  "
+>
+  {/* Header strip */}
+  <div className="h-20 bg-indigo-500 rounded-t-2xl" />
 
-                  <div className="flex-1 p-5 pt-0">
-                    <div className="grid grid-cols-1 gap-3 text-sm text-slate-600">
-                      <InfoRow Icon={Building2} label="College" value={student.college} />
-                      <InfoRow Icon={MapPin} label="City" value={student.city} />
-                      <InfoRow Icon={GraduationCap} label="Batch" value={student.batchYear || "—"} />
-                    </div>
+  {/* Avatar */}
+  <div className="relative -mt-10 px-5">
+    <div className="w-16 h-16 rounded-full bg-white shadow flex items-center justify-center">
+      <div className="w-12 h-12 rounded-full bg-indigo-600 text-white text-sm font-semibold flex items-center justify-center">
+        {getInitials(student)}
+      </div>
+    </div>
+  </div>
 
-                    {/* Social Links */}
-                    {(student.linkedInUrl || student.githubUrl) && (
-                      <div className="mt-4 pt-4 border-t border-gray-100">
-                        <p className="text-xs font-semibold text-gray-600 mb-2">Connect</p>
-                        <div className="flex gap-2">
-                          {student.linkedInUrl && (
-                            <a
-                              href={student.linkedInUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              onClick={(e) => e.stopPropagation()}
-                              className="flex-1 p-2 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors border border-blue-200 flex items-center justify-center gap-2"
-                              aria-label="LinkedIn profile"
-                            >
-                              <Linkedin className="w-4 h-4 text-blue-600" />
-                              <span className="text-xs font-medium text-blue-600">LinkedIn</span>
-                            </a>
-                          )}
-                          {student.githubUrl && (
-                            <a
-                              href={student.githubUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              onClick={(e) => e.stopPropagation()}
-                              className="flex-1 p-2 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors border border-gray-300 flex items-center justify-center gap-2"
-                              aria-label="GitHub profile"
-                            >
-                              <Github className="w-4 h-4 text-gray-800" />
-                              <span className="text-xs font-medium text-gray-800">GitHub</span>
-                            </a>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </article>
-              </Link>
+  {/* Content */}
+  <div className="px-5 pt-3 pb-4 flex-1">
+    <h3 className="text-base font-semibold text-gray-900">
+      {student.firstName} {student.lastName}
+    </h3>
+
+    <p className="text-sm text-gray-500 mb-3">
+      {student.college || "—"}
+    </p>
+
+    <div className="space-y-2 text-sm text-gray-600">
+      <InfoRow Icon={MapPin} label="City" value={student.city} />
+      <InfoRow Icon={GraduationCap} label="Batch" value={student.batchYear} />
+    </div>
+  </div>
+
+  {/* Connect section (like 2nd card) */}
+  {(student.linkedInUrl || student.githubUrl) && (
+    <div className="px-5 py-3 bg-gray-50 border-t border-gray-200 rounded-b-2xl">
+      <p className="text-xs font-medium text-gray-500 mb-2 uppercase">
+        Connect
+      </p>
+
+      <div className="flex gap-2">
+        {student.linkedInUrl && (
+          <a
+            href={student.linkedInUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="
+              inline-flex items-center gap-1.5
+              px-3 py-1.5
+              rounded-full
+              text-xs font-medium
+              bg-blue-100 text-blue-700
+              border border-blue-200
+              hover:bg-blue-600 hover:text-white
+              transition
+            "
+          >
+            <Linkedin className="w-3.5 h-3.5" />
+            LinkedIn
+          </a>
+        )}
+
+        {student.githubUrl && (
+          <a
+            href={student.githubUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="
+              inline-flex items-center gap-1.5
+              px-3 py-1.5
+              rounded-full
+              text-xs font-medium
+              bg-gray-200 text-gray-800
+              border border-gray-300
+              hover:bg-gray-900 hover:text-white
+              transition
+            "
+          >
+            <Github className="w-3.5 h-3.5" />
+            GitHub
+          </a>
+        )}
+      </div>
+    </div>
+  )}
+</article>
+
+
+
+
+
+
+
+
+
+</Link>
+
             ))}
           </div>
         )}
