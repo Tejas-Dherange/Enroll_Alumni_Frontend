@@ -21,7 +21,7 @@ export default function StudentsSection({ students, mentors, onBlockUser, onUnbl
     // Filtered students
     const filteredStudents = useMemo(() => {
         let filtered = [...students];
-
+        console.log(students);
         if (searchQuery.trim()) {
             const query = searchQuery.toLowerCase();
             filtered = filtered.filter(s =>
@@ -220,6 +220,9 @@ export default function StudentsSection({ students, mentors, onBlockUser, onUnbl
                                 Email
                             </th>
                             <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                                Mobile
+                            </th>
+                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                                 College
                             </th>
                             <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
@@ -258,6 +261,9 @@ export default function StudentsSection({ students, mentors, onBlockUser, onUnbl
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap">
                                     <div className="text-sm text-gray-900">{student.email}</div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                    <div className="text-sm text-gray-900">{student?.mobileNumber}</div>
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap">
                                     <div className="text-sm text-gray-700">{student.college}</div>

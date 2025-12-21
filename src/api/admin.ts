@@ -15,6 +15,7 @@ export const adminAPI = {
     },
     getAllStudents: async () => {
         const response = await api.get('/admin/students');
+        console.log("Students", response.data);
         return response.data;
     },
     getAllAnnouncements: async () => {
