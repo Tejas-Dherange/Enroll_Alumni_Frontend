@@ -1,115 +1,100 @@
-import { useState } from 'react';
-import { X, User, Mail, Lock, Phone, Linkedin, Github, FileText } from 'lucide-react';
-import { adminAPI } from '../api/admin';
+import { useState, useEffect } from 'react';
+import { X, Linkedin, Github, User, Phone, Building2, MapPin, GraduationCap, FileText } from 'lucide-react';
+import { profileAPI } from '../api/profile';
+import { useAuthStore } from '../stores/authStore';
 
-interface AddMentorModalProps {
+interface EditProfileModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSuccess: () => void;
 }
 
-export default function AddMentorModal({ isOpen, onClose, onSuccess }: AddMentorModalProps) {
-    const [formData, setFormData] = useState({
-        firstName: '',
-        lastName: '',
-        email: '',
-        password: '',
-        mobileNumber: '',
-        linkedInUrl: '',
-        githubUrl: '',
-        bio: ''
-    });
+export default function EditProfileModal({ isOpen, onClose, onSuccess }: EditProfileModalProps) {
+    const { user, setUser } = useAuthStore();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
 
+    const [formData, setFormData] = useState({
+        firstName: '',
+        lastName: '',
+        mobileNumber: '',
+        linkedInUrl: '',
+        githubUrl: '',
+        bio: '',
+        // Student-specific fields
+        college: '',
+        city: '',
+        batchYear: '',
+    });
+
+    useEffect(() => {
+        if (isOpen && user) {
+            setFormData({
+                firstName: user.firstName || '',
+                lastName: user.lastName || '',
+                mobileNumber: user.mobileNumber || '',
+                linkedInUrl: user.linkedInUrl || '',
+                githubUrl: user.githubUrl || '',
+                bio: user.bio || '',
+                college: user.profile?.college || '',
+                city: user.profile?.city || '',
+                batchYear: user.profile?.batchYear?.toString() || '',
+            });
+            setError('');
+            setSuccess('');
+        }
+    }, [isOpen, user]);
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setLoading(true);
         setError('');
         setSuccess('');
 
-        // Validation
-        if (!formData.firstName.trim() || !formData.lastName.trim() || !formData.email.trim() || !formData.password.trim()) {
-            setError('First name, last name, email, and password are required');
-            return;
-        }
-
-        if (formData.password.length < 6) {
-            setError('Password must be at least 6 characters');
-            return;
-        }
-
-        // Validate LinkedIn URL if provided
-        if (formData.linkedInUrl.trim()) {
-            const linkedInPattern = /^https?:\/\/(www\.)?linkedin\.com\/.+/i;
-            if (!linkedInPattern.test(formData.linkedInUrl)) {
-                setError('Invalid LinkedIn URL. Must be a valid LinkedIn profile URL.');
-                return;
-            }
-        }
-
-        // Validate GitHub URL if provided
-        if (formData.githubUrl.trim()) {
-            const githubPattern = /^https?:\/\/(www\.)?github\.com\/.+/i;
-            if (!githubPattern.test(formData.githubUrl)) {
-                setError('Invalid GitHub URL. Must be a valid GitHub profile URL.');
-                return;
-            }
-        }
-
-        setLoading(true);
         try {
-            await adminAPI.addMentor({
-                firstName: formData.firstName.trim(),
-                lastName: formData.lastName.trim(),
-                email: formData.email.trim(),
-                password: formData.password,
-                mobileNumber: formData.mobileNumber.trim() || undefined,
-                linkedInUrl: formData.linkedInUrl.trim() || undefined,
-                githubUrl: formData.githubUrl.trim() || undefined,
-                bio: formData.bio.trim() || undefined,
-            });
+            const updateData: any = {
+                firstName: formData.firstName,
+                lastName: formData.lastName,
+                mobileNumber: formData.mobileNumber || null,
+                linkedInUrl: formData.linkedInUrl || null,
+                githubUrl: formData.githubUrl || null,
+                bio: formData.bio || null,
+            };
 
-            setSuccess('Mentor added successfully!');
+            // Add student-specific fields if user is a student
+            if (user?.role === 'STUDENT') {
+                updateData.college = formData.college;
+                updateData.city = formData.city;
+                updateData.batchYear = formData.batchYear ? parseInt(formData.batchYear) : null;
+            }
 
-            // Reset form
-            setFormData({
-                firstName: '',
-                lastName: '',
-                email: '',
-                password: '',
-                mobileNumber: '',
-                linkedInUrl: '',
-                githubUrl: '',
-                bio: ''
-            });
+            const response = await profileAPI.updateProfile(updateData);
 
+            // Update user in auth store
+            if (response.profile) {
+                setUser({
+                    ...user!,
+                    firstName: response.profile.firstName,
+                    lastName: response.profile.lastName,
+                    mobileNumber: response.profile.mobileNumber,
+                    linkedInUrl: response.profile.linkedInUrl,
+                    githubUrl: response.profile.githubUrl,
+                    bio: response.profile.bio,
+                    profile: response.profile.studentProfile,
+                });
+            }
+
+            setSuccess('Profile updated successfully!');
             setTimeout(() => {
                 onSuccess();
                 onClose();
-                setSuccess('');
             }, 1500);
         } catch (err: any) {
-            setError(err.response?.data?.error || 'Failed to add mentor');
+            setError(err.response?.data?.error || 'Failed to update profile');
         } finally {
             setLoading(false);
         }
-    };
-
-    const handleClose = () => {
-        setFormData({
-            firstName: '',
-            lastName: '',
-            email: '',
-            password: '',
-            mobileNumber: '',
-            linkedInUrl: '',
-            githubUrl: '',
-            bio: ''
-        });
-        setError('');
-        setSuccess('');
-        onClose();
     };
 
     if (!isOpen) return null;
@@ -119,9 +104,9 @@ export default function AddMentorModal({ isOpen, onClose, onSuccess }: AddMentor
             <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
                 {/* Header */}
                 <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between rounded-t-2xl">
-                    <h2 className="text-2xl font-bold text-gray-900">Add New Mentor</h2>
+                    <h2 className="text-2xl font-bold text-gray-900">Edit Profile</h2>
                     <button
-                        onClick={handleClose}
+                        onClick={onClose}
                         className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                         aria-label="Close modal"
                     >
@@ -160,7 +145,6 @@ export default function AddMentorModal({ isOpen, onClose, onSuccess }: AddMentor
                                     value={formData.firstName}
                                     onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
                                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                                    placeholder="Enter first name"
                                     required
                                 />
                             </div>
@@ -174,7 +158,6 @@ export default function AddMentorModal({ isOpen, onClose, onSuccess }: AddMentor
                                     value={formData.lastName}
                                     onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
                                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                                    placeholder="Enter last name"
                                     required
                                 />
                             </div>
@@ -182,46 +165,7 @@ export default function AddMentorModal({ isOpen, onClose, onSuccess }: AddMentor
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
-                                <Mail className="w-4 h-4 text-gray-500" />
-                                Email <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                                type="email"
-                                value={formData.email}
-                                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                                placeholder="mentor@example.com"
-                                required
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
-                                <Lock className="w-4 h-4 text-gray-500" />
-                                Password <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                                type="password"
-                                value={formData.password}
-                                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                                placeholder="Minimum 6 characters"
-                                required
-                                minLength={6}
-                            />
-                            <p className="text-xs text-gray-500 mt-1">Password must be at least 6 characters</p>
-                        </div>
-                    </div>
-
-                    {/* Contact Information */}
-                    <div className="space-y-4">
-                        <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                            <Phone className="w-5 h-5 text-indigo-600" />
-                            Contact Information
-                        </h3>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <Phone className="w-4 h-4 text-gray-500" />
                                 Mobile Number
                             </label>
                             <input
@@ -283,16 +227,69 @@ export default function AddMentorModal({ isOpen, onClose, onSuccess }: AddMentor
                                 onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
                                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                                 rows={4}
-                                placeholder="Brief description about the mentor..."
+                                placeholder="Tell us about yourself..."
                             />
                         </div>
                     </div>
+
+                    {/* Student-specific fields */}
+                    {user?.role === 'STUDENT' && (
+                        <div className="space-y-4">
+                            <h3 className="text-lg font-semibold text-gray-900">Student Information</h3>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+                                    <Building2 className="w-4 h-4 text-gray-500" />
+                                    College <span className="text-red-500">*</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    value={formData.college}
+                                    onChange={(e) => setFormData({ ...formData, college: e.target.value })}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                    required={user?.role === 'STUDENT'}
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+                                        <MapPin className="w-4 h-4 text-gray-500" />
+                                        City <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={formData.city}
+                                        onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                        required={user?.role === 'STUDENT'}
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+                                        <GraduationCap className="w-4 h-4 text-gray-500" />
+                                        Batch Year <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="number"
+                                        value={formData.batchYear}
+                                        onChange={(e) => setFormData({ ...formData, batchYear: e.target.value })}
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                        min="1900"
+                                        max="2100"
+                                        required={user?.role === 'STUDENT'}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Actions */}
                     <div className="flex gap-3 pt-4 border-t border-gray-200">
                         <button
                             type="button"
-                            onClick={handleClose}
+                            onClick={onClose}
                             className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
                             disabled={loading}
                         >
@@ -303,7 +300,7 @@ export default function AddMentorModal({ isOpen, onClose, onSuccess }: AddMentor
                             className="flex-1 px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all shadow-md hover:shadow-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                             disabled={loading}
                         >
-                            {loading ? 'Adding Mentor...' : 'Add Mentor'}
+                            {loading ? 'Saving...' : 'Save Changes'}
                         </button>
                     </div>
                 </form>

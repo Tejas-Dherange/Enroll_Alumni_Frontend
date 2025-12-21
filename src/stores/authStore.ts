@@ -7,6 +7,9 @@ interface User {
     firstName: string;
     lastName: string;
     mobileNumber?: string;
+    linkedInUrl?: string;
+    githubUrl?: string;
+    bio?: string;
     role: string; // Accept any string to handle both uppercase and lowercase from Prisma
     status: string;
     emailVerified: boolean;

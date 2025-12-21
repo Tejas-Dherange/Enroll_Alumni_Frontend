@@ -10,12 +10,16 @@ import {
   MapPin,
   Building2,
   AlertCircle,
+  Edit,
+  Linkedin,
+  Github,
 } from 'lucide-react';
 import { announcementAPI } from '../api/announcements';
 import { useAuthStore } from '../stores/authStore';
 import api from '../api/auth';
 import { StudentDashboardSkeleton } from '../components/DashboardSkeleton';
 import { cache } from '../utils/cache';
+import EditProfileModal from '../components/EditProfileModal';
 
 export default function StudentDashboard() {
   const { user } = useAuthStore();
@@ -23,6 +27,7 @@ export default function StudentDashboard() {
   const [mentor, setMentor] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [studentProfile, setStudentProfile] = useState<any | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -248,7 +253,7 @@ export default function StudentDashboard() {
                 )}
               </div>
 
-              
+
             </div>
           </div>
 
@@ -283,7 +288,16 @@ export default function StudentDashboard() {
 
             {/* Profile card */}
             <div className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 shadow-md">
-              <h3 className="font-bold text-lg text-gray-900 mb-4">Your Profile</h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-bold text-lg text-gray-900">Your Profile</h3>
+                <button
+                  onClick={() => setShowEditModal(true)}
+                  className="p-2 hover:bg-indigo-50 rounded-lg transition-colors group"
+                  aria-label="Edit profile"
+                >
+                  <Edit className="w-4 h-4 text-gray-500 group-hover:text-indigo-600" />
+                </button>
+              </div>
 
               <div className="space-y-3">
                 <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg overflow-hidden">
@@ -309,6 +323,37 @@ export default function StudentDashboard() {
                     <p className="text-sm font-medium text-gray-900 mt-1">{studentProfile?.profile?.batchYear || '—'}</p>
                   </div>
                 </div>
+
+                {/* Social Links */}
+                {(user?.linkedInUrl || user?.githubUrl) && (
+                  <div className="pt-3 border-t border-gray-200">
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Social Links</p>
+                    <div className="flex gap-2">
+                      {user?.linkedInUrl && (
+                        <a
+                          href={user.linkedInUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-2 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+                          aria-label="LinkedIn profile"
+                        >
+                          <Linkedin className="w-4 h-4 text-blue-600" />
+                        </a>
+                      )}
+                      {user?.githubUrl && (
+                        <a
+                          href={user.githubUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                          aria-label="GitHub profile"
+                        >
+                          <Github className="w-4 h-4 text-gray-800" />
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -327,6 +372,16 @@ export default function StudentDashboard() {
           </aside>
         </div>
       </div>
+
+      {/* Edit Profile Modal */}
+      <EditProfileModal
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        onSuccess={() => {
+          cache.delete('student-dashboard');
+          loadData(true);
+        }}
+      />
     </div>
   );
 }

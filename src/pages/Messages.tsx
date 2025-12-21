@@ -4,7 +4,7 @@ import { messageAPI } from '../api/messages';
 import { useAuthStore } from '../stores/authStore';
 import api from '../api/auth';
 import { MessagesPageSkeleton } from '../components/DashboardSkeleton';
-import { Send, RefreshCw, Loader2, User } from 'lucide-react';
+import { Send, RefreshCw, Loader2, User, Linkedin, Github, FileText } from 'lucide-react';
 
 function getInitials(name?: string) {
     if (!name) return 'NA';
@@ -151,7 +151,7 @@ export default function Messages() {
     }
 
     return (
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden flex flex-col h-[75vh] max-h-[85vh]">
 
                 {/* Header (mirrors ChatWidget) */}
@@ -181,80 +181,145 @@ export default function Messages() {
                     </div>
                 </div>
 
-                {/* Messages area */}
-                <div ref={containerRef} className="flex-1 overflow-y-auto p-6 bg-gray-50/50 space-y-4">
-                    {initialLoading ? (
-                        <div className="flex flex-col items-center justify-center h-full text-gray-400 space-y-3">
-                            <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
-                            <p className="text-sm font-medium">Loading conversation...</p>
-                        </div>
-                    ) : messages.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center h-full text-center px-4">
-                            <div className="w-16 h-16 bg-indigo-50 rounded-full flex items-center justify-center mb-4">
-                                <User className="w-8 h-8 text-indigo-400" />
-                            </div>
-                            <h3 className="text-sm font-semibold text-gray-900">No messages yet</h3>
-                            <p className="text-xs text-gray-500 mt-1 max-w-xs">Send a message to start the conversation with {mentor.firstName}.</p>
-                        </div>
-                    ) : (
-                        messages.map((message) => {
-                            const isMine = !!message.isMine;
-                            return (
-                                <div key={message.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
-                                    <div className={`flex items-end gap-2 max-w-[85%] ${isMine ? 'flex-row-reverse' : ''}`}>
-                                        {/* avatar */}
-                                        <div
-                                            className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-[10px] font-bold pb-0.5 shadow-sm ring-2 ring-white ${isMine ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-200 text-gray-600'
-                                                }`}
-                                        >
-                                            {isMine ? getInitials(`${user?.firstName} ${user?.lastName}`) : getInitials(`${mentor.firstName} ${mentor.lastName}`)}
-                                        </div>
-
-                                        {/* bubble */}
-                                        <div className={`group relative px-4 py-2.5 text-sm shadow-sm break-words ${isMine ? 'bg-indigo-600 text-white rounded-2xl rounded-tr-sm' : 'bg-white text-gray-900 rounded-2xl rounded-tl-sm border border-gray-100'
-                                            }`}>
-                                            <p className="leading-relaxed whitespace-pre-wrap">{message.content}</p>
-                                            <p className={`text-[10px] mt-1 text-right ${isMine ? 'text-indigo-200' : 'text-gray-400'}`}>
-                                                {formatTime(message.sentAt)}
-                                            </p>
-                                        </div>
-                                    </div>
+                {/* Main Content Area - Two Column Layout */}
+                <div className="flex-1 flex overflow-hidden">
+                    {/* Messages area - Left side */}
+                    <div className="flex-1 flex flex-col">
+                        <div ref={containerRef} className="flex-1 overflow-y-auto p-6 bg-gray-50/50 space-y-4">
+                            {initialLoading ? (
+                                <div className="flex flex-col items-center justify-center h-full text-gray-400 space-y-3">
+                                    <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
+                                    <p className="text-sm font-medium">Loading conversation...</p>
                                 </div>
-                            );
-                        })
-                    )}
+                            ) : messages.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center h-full text-center px-4">
+                                    <div className="w-16 h-16 bg-indigo-50 rounded-full flex items-center justify-center mb-4">
+                                        <User className="w-8 h-8 text-indigo-400" />
+                                    </div>
+                                    <h3 className="text-sm font-semibold text-gray-900">No messages yet</h3>
+                                    <p className="text-xs text-gray-500 mt-1 max-w-xs">Send a message to start the conversation with {mentor.firstName}.</p>
+                                </div>
+                            ) : (
+                                messages.map((message) => {
+                                    const isMine = !!message.isMine;
+                                    return (
+                                        <div key={message.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
+                                            <div className={`flex items-end gap-2 max-w-[85%] ${isMine ? 'flex-row-reverse' : ''}`}>
+                                                {/* avatar */}
+                                                <div
+                                                    className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-[10px] font-bold pb-0.5 shadow-sm ring-2 ring-white ${isMine ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-200 text-gray-600'
+                                                        }`}
+                                                >
+                                                    {isMine ? getInitials(`${user?.firstName} ${user?.lastName}`) : getInitials(`${mentor.firstName} ${mentor.lastName}`)}
+                                                </div>
 
-                    <div ref={endRef} />
-                </div>
+                                                {/* bubble */}
+                                                <div className={`group relative px-4 py-2.5 text-sm shadow-sm break-words ${isMine ? 'bg-indigo-600 text-white rounded-2xl rounded-tr-sm' : 'bg-white text-gray-900 rounded-2xl rounded-tl-sm border border-gray-100'
+                                                    }`}>
+                                                    <p className="leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                                                    <p className={`text-[10px] mt-1 text-right ${isMine ? 'text-indigo-200' : 'text-gray-400'}`}>
+                                                        {formatTime(message.sentAt)}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            )}
 
-                {/* Input area */}
-                <div className="p-4 bg-white border-t border-gray-100">
-                    <form onSubmit={handleSend} className="flex items-center gap-3">
-                        <div className="relative flex-1">
-                            <input
-                                type="text"
-                                className="w-full pl-5 pr-4 py-3 bg-gray-50 border-transparent focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 rounded-full text-sm transition-all outline-none placeholder:text-gray-400"
-                                placeholder="Type your message..."
-                                value={newMessage}
-                                onChange={(e) => setNewMessage(e.target.value)}
-                                onKeyDown={onKeyDown}
-                                disabled={loading}
-                                aria-label="Type your message"
-                            />
+                            <div ref={endRef} />
                         </div>
 
-                        <button
-                            type="submit"
-                            className={`p-3 rounded-full flex-shrink-0 transition-all duration-200 shadow-sm ${!newMessage.trim() || loading
-                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                : 'bg-indigo-600 text-white hover:bg-indigo-700 hover:shadow-md hover:scale-105 active:scale-95'
-                                }`}
-                            disabled={loading || !newMessage.trim()}
-                            aria-label="Send message"
-                        >
-                            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5 ml-0.5" />}
-                        </button>
-                    </form>
+                        {/* Input area */}
+                        <div className="p-4 bg-white border-t border-gray-100">
+                            <form onSubmit={handleSend} className="flex items-center gap-3">
+                                <div className="relative flex-1">
+                                    <input
+                                        type="text"
+                                        className="w-full pl-5 pr-4 py-3 bg-gray-50 border-transparent focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 rounded-full text-sm transition-all outline-none placeholder:text-gray-400"
+                                        placeholder="Type your message..."
+                                        value={newMessage}
+                                        onChange={(e) => setNewMessage(e.target.value)}
+                                        onKeyDown={onKeyDown}
+                                        disabled={loading}
+                                        aria-label="Type your message"
+                                    />
+                                </div>
+
+                                <button
+                                    type="submit"
+                                    className={`p-3 rounded-full flex-shrink-0 transition-all duration-200 shadow-sm ${!newMessage.trim() || loading
+                                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                        : 'bg-indigo-600 text-white hover:bg-indigo-700 hover:shadow-md hover:scale-105 active:scale-95'
+                                        }`}
+                                    disabled={loading || !newMessage.trim()}
+                                    aria-label="Send message"
+                                >
+                                    {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5 ml-0.5" />}
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    {/* Mentor Profile Card - Right side */}
+                    {(mentor.bio || mentor.linkedInUrl || mentor.githubUrl) && (
+                        <div className="hidden lg:block w-80 border-l border-gray-200 bg-gray-50/50 overflow-y-auto">
+                            <div className="p-6 space-y-4">
+                                <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl border border-indigo-100 p-4">
+                                    {/* Mentor Avatar and Name */}
+                                    <div className="flex flex-col items-center mb-4">
+                                        <Avatar src={mentor.avatarUrl} name={`${mentor.firstName} ${mentor.lastName}`} size={16} />
+                                        <h3 className="text-lg font-bold text-gray-900 mt-3">
+                                            {mentor.firstName} {mentor.lastName}
+                                        </h3>
+                                        <p className="text-xs text-gray-600">Your Mentor</p>
+                                    </div>
+
+                                    {mentor.bio && (
+                                        <div className="mb-4">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <FileText className="w-4 h-4 text-indigo-600" />
+                                                <h4 className="text-sm font-semibold text-gray-900">About</h4>
+                                            </div>
+                                            <p className="text-sm text-gray-700 leading-relaxed">{mentor.bio}</p>
+                                        </div>
+                                    )}
+
+                                    {(mentor.linkedInUrl || mentor.githubUrl) && (
+                                        <div>
+                                            <p className="text-xs font-semibold text-gray-600 mb-2">Connect</p>
+                                            <div className="flex gap-2">
+                                                {mentor.linkedInUrl && (
+                                                    <a
+                                                        href={mentor.linkedInUrl}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="flex-1 p-2 bg-white hover:bg-blue-50 rounded-lg transition-colors border border-blue-200 flex items-center justify-center gap-2"
+                                                        aria-label="LinkedIn profile"
+                                                    >
+                                                        <Linkedin className="w-4 h-4 text-blue-600" />
+                                                        <span className="text-xs font-medium text-blue-600">LinkedIn</span>
+                                                    </a>
+                                                )}
+                                                {mentor.githubUrl && (
+                                                    <a
+                                                        href={mentor.githubUrl}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="flex-1 p-2 bg-white hover:bg-gray-100 rounded-lg transition-colors border border-gray-300 flex items-center justify-center gap-2"
+                                                        aria-label="GitHub profile"
+                                                    >
+                                                        <Github className="w-4 h-4 text-gray-800" />
+                                                        <span className="text-xs font-medium text-gray-800">GitHub</span>
+                                                    </a>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
             </div>
