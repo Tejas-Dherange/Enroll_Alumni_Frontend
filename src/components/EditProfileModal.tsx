@@ -28,23 +28,49 @@ export default function EditProfileModal({ isOpen, onClose, onSuccess }: EditPro
         batchYear: '',
     });
 
+
     useEffect(() => {
-        if (isOpen && user) {
-            setFormData({
-                firstName: user.firstName || '',
-                lastName: user.lastName || '',
-                mobileNumber: user.mobileNumber || '',
-                linkedInUrl: user.linkedInUrl || '',
-                githubUrl: user.githubUrl || '',
-                bio: user.bio || '',
-                college: user.profile?.college || '',
-                city: user.profile?.city || '',
-                batchYear: user.profile?.batchYear?.toString() || '',
-            });
-            setError('');
-            setSuccess('');
-        }
+        const loadProfileData = async () => {
+            if (isOpen && user) {
+                try {
+                    // Fetch fresh profile data
+                    const profileData = await profileAPI.getProfile();
+                    console.log('EditProfileModal - Fresh profile data:', profileData);
+
+                    setFormData({
+                        firstName: profileData.firstName || user.firstName || '',
+                        lastName: profileData.lastName || user.lastName || '',
+                        mobileNumber: profileData.mobileNumber || user.mobileNumber || '',
+                        linkedInUrl: profileData.linkedInUrl || user.linkedInUrl || '',
+                        githubUrl: profileData.githubUrl || user.githubUrl || '',
+                        bio: profileData.bio || user.bio || '',
+                        college: profileData.studentProfile?.college || user.profile?.college || '',
+                        city: profileData.studentProfile?.city || user.profile?.city || '',
+                        batchYear: profileData.studentProfile?.batchYear?.toString() || user.profile?.batchYear?.toString() || '',
+                    });
+                } catch (err) {
+                    console.error('Failed to load profile data:', err);
+                    // Fallback to user data from store
+                    setFormData({
+                        firstName: user.firstName || '',
+                        lastName: user.lastName || '',
+                        mobileNumber: user.mobileNumber || '',
+                        linkedInUrl: user.linkedInUrl || '',
+                        githubUrl: user.githubUrl || '',
+                        bio: user.bio || '',
+                        college: user.profile?.college || '',
+                        city: user.profile?.city || '',
+                        batchYear: user.profile?.batchYear?.toString() || '',
+                    });
+                }
+                setError('');
+                setSuccess('');
+            }
+        };
+
+        loadProfileData();
     }, [isOpen, user]);
+
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();

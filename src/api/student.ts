@@ -20,10 +20,15 @@ export const studentAPI = {
     },
     getColleges: async () => {
         const response = await api.get('/student/colleges');
+        console.log("getColleges", response.data);
         return response.data;
     },
     getCities: async () => {
         const response = await api.get('/student/cities');
+        return response.data;
+    },
+    getBatches: async () => {
+        const response = await api.get('/student/batches');
         return response.data;
     },
 };

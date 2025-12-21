@@ -11,6 +11,8 @@ import {
   Filter,
   ChevronLeft,
   ChevronRight,
+  Linkedin,
+  Github,
 } from "lucide-react";
 import { studentAPI } from "../api/student";
 import { DirectoryGridSkeleton } from "../components/DashboardSkeleton";
@@ -406,6 +408,41 @@ export default function Directory() {
                       <InfoRow Icon={MapPin} label="City" value={student.city} />
                       <InfoRow Icon={GraduationCap} label="Batch" value={student.batchYear || "—"} />
                     </div>
+
+                    {/* Social Links */}
+                    {(student.linkedInUrl || student.githubUrl) && (
+                      <div className="mt-4 pt-4 border-t border-gray-100">
+                        <p className="text-xs font-semibold text-gray-600 mb-2">Connect</p>
+                        <div className="flex gap-2">
+                          {student.linkedInUrl && (
+                            <a
+                              href={student.linkedInUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="flex-1 p-2 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors border border-blue-200 flex items-center justify-center gap-2"
+                              aria-label="LinkedIn profile"
+                            >
+                              <Linkedin className="w-4 h-4 text-blue-600" />
+                              <span className="text-xs font-medium text-blue-600">LinkedIn</span>
+                            </a>
+                          )}
+                          {student.githubUrl && (
+                            <a
+                              href={student.githubUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="flex-1 p-2 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors border border-gray-300 flex items-center justify-center gap-2"
+                              aria-label="GitHub profile"
+                            >
+                              <Github className="w-4 h-4 text-gray-800" />
+                              <span className="text-xs font-medium text-gray-800">GitHub</span>
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </article>
               </Link>
