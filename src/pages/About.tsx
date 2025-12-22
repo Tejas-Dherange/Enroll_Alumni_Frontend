@@ -390,12 +390,7 @@ function WhyStudentsSection({ mounted }: { mounted: boolean }) {
                     </p>
 
                     <div className="mt-4">
-                      <Link
-                        to="/signup"
-                        className="inline-block px-3 py-2 sm:px-4 sm:py-2 rounded-md bg-white text-slate-900 font-semibold shadow hover:opacity-95 transition"
-                      >
-                        Learn more
-                      </Link>
+                      
                     </div>
                   </div>
                 </div>

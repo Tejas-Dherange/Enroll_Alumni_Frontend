@@ -30,7 +30,7 @@ export default function Footer({ className = "" }) {
               </div>
 
               <p className="text-sm text-gray-400 mb-4">
-                Admission guidance you can access anywhere — fast and reliable.
+                Carrer guidance you can access anywhere — fast and reliable.
               </p>
 
               <div className="flex items-center space-x-3">

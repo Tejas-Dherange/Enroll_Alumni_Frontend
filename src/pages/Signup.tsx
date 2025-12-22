@@ -75,7 +75,7 @@ export default function Signup() {
               </svg>
             </div>
             <h2 className="text-2xl font-bold text-white">Registration successful!</h2>
-            <p className="text-sm text-white/85 mt-2">Please check your email to verify your account before logging in.</p>
+            <p className="text-sm text-white/85 mt-2">Your email will be verified by admin within 24 hours, if any problem contact admin (support@enrollengineer.in)</p>
           </div>
 
           <div className="flex gap-3">
@@ -85,12 +85,12 @@ export default function Signup() {
             >
               Go to Login
             </button>
-            <button
+            {/* <button
               onClick={() => setSuccess(false)}
               className="flex-1 py-2.5 rounded-md border border-white/20 text-white bg-white/5 hover:bg-white/10 transition"
             >
               Register another
-            </button>
+            </button> */}
           </div>
         </div>
       </div>

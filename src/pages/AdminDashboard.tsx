@@ -7,6 +7,8 @@ import AddMentorModal from '../components/AddMentorModal';
 import StudentsSection from '../components/admin/StudentsSection';
 import MentorsSection from '../components/admin/MentorsSection';
 import { StatisticsSkeleton, ListSkeleton } from '../components/DashboardSkeleton';
+import { motion } from 'framer-motion';
+
 
 import {
   Plus,
@@ -42,8 +44,11 @@ export default function AdminDashboard() {
   // Modal states
   const [showApproveModal, setShowApproveModal] = useState(false);
   const [showBroadcastModal, setShowBroadcastModal] = useState(false);
+
   const [showRejectModal, setShowRejectModal] = useState(false);
+  const [showRejectStudentModal, setShowRejectStudentModal] = useState(false);
   const [showBatchModal, setShowBatchModal] = useState(false);
+
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showAddMentorModal, setShowAddMentorModal] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
@@ -56,19 +61,10 @@ export default function AdminDashboard() {
   const [selectedBatches, setSelectedBatches] = useState<number[]>([]);
   const [availableBatches, setAvailableBatches] = useState<number[]>([]);
   const [rejectionRemarks, setRejectionRemarks] = useState('');
+  const [isRejectingStudent, setIsRejectingStudent] = useState(false);
 
-  /* ------------------ Filter state + options ------------------ */
-  const [colleges, setColleges] = useState<string[]>([]);
-  const [cities, setCities] = useState<string[]>([]);
-  const [batches, setBatches] = useState<string[]>([]);
-  const [mobileOpen, setMobileOpen] = useState(false);
 
-  const [filters, setFilters] = useState({
-    search: '',
-    college: '',
-    city: '',
-    batch: '',
-  });
+
 
   // pagination for lists when we request filtered data
   const [page, setPage] = useState(1);
@@ -76,36 +72,11 @@ export default function AdminDashboard() {
   const [total, setTotal] = useState(0);
 
   useEffect(() => {
-    loadFilterOptions();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
     loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, filters, page, pageSize]);
+  }, [activeTab, page, pageSize]);
 
-  const loadFilterOptions = async () => {
-    try {
-      const [collegeData, cityData, batchYears] = await Promise.all([
-        (adminAPI as any).getColleges?.() ?? Promise.resolve([]),
-        (adminAPI as any).getCities?.() ?? Promise.resolve([]),
-        // some APIs expose batch years; fallback to adminAPI.getBatchYears if available
-        adminAPI.getBatchYears?.() ?? Promise.resolve([]),
-      ]);
-      setColleges(collegeData || []);
-      setCities(cityData || []);
-      // normalize batch years into strings
-      setBatches((batchYears || []).map((b: any) => String(b)));
-      if ((availableBatches || []).length === 0 && (adminAPI.getBatchYears?.() ?? false)) {
-        // also populate availableBatches if adminAPI provides numeric years
-        const years = await adminAPI.getBatchYears?.();
-        if (Array.isArray(years)) setAvailableBatches(years.map((y: any) => Number(y)));
-      }
-    } catch (e) {
-      console.error('Failed to load filter options', e);
-    }
-  };
+
 
   /* -------------------- DATA LOAD -------------------- */
 
@@ -121,7 +92,8 @@ export default function AdminDashboard() {
 
         case 'pending': {
           // try to pass filters + pagination if endpoint supports it
-          const payload = { ...filters, page, pageSize };
+          // try to pass filters + pagination if endpoint supports it
+          const payload = { page, pageSize };
           const pending = await (adminAPI.getPendingStudents?.(payload) ?? adminAPI.getPendingStudents?.() ?? []);
           setPendingStudents(pending.items ?? pending ?? []);
           setTotal(pending.total ?? (pending.items?.length ?? (Array.isArray(pending) ? pending.length : 0)));
@@ -163,16 +135,7 @@ export default function AdminDashboard() {
 
   /* -------------------- ACTIONS -------------------- */
 
-  const handleFilterChange = (key: string, value: string) => {
-    setPage(1);
-    setFilters((prev) => ({ ...prev, [key]: value }));
-  };
 
-  const clearFilters = () => {
-    setFilters({ search: '', college: '', city: '', batch: '' });
-    setPage(1);
-    setMobileOpen(false);
-  };
 
   const handleApprove = async () => {
     if (!selectedStudent) return;
@@ -184,11 +147,26 @@ export default function AdminDashboard() {
       setSelectedStudent(null);
       setSelectedMentor('');
 
-      refreshTabs('pending', 'students');
+      refreshTabs('pending', 'students', 'statistics');
     } catch (error) {
       console.error("Error approving student", error);
     } finally {
       setIsApproving(false);
+    }
+  };
+
+  const handleRejectStudent = async () => {
+    if (!selectedStudent) return;
+    setIsRejectingStudent(true);
+    try {
+      await adminAPI.rejectStudent(selectedStudent.id);
+      setShowRejectStudentModal(false);
+      setSelectedStudent(null);
+      refreshTabs('pending', 'students', 'statistics');
+    } catch (error) {
+      console.error("Error rejecting student", error);
+    } finally {
+      setIsRejectingStudent(false);
     }
   };
 
@@ -333,282 +311,115 @@ export default function AdminDashboard() {
         </div>
 
         {/* ------------------ TABS ------------------ */}
-        <div className="mb-8 bg-white rounded-xl shadow-sm border border-gray-200 p-2 overflow-hidden">
-          <nav className="flex overflow-x-auto pb-1 sm:pb-0 hide-scrollbar flex-nowrap justify-start gap-3 sm:gap-4">
-            {[
-              { id: 'statistics', label: 'Statistics', Icon: BarChart3 },
-              { id: 'pending', label: 'Pending Students', Icon: Clock },
-              { id: 'students', label: 'Students', Icon: Users },
-              { id: 'mentors', label: 'Mentors', Icon: UserCog },
-              { id: 'pending-announcements', label: 'Pending Announcements', Icon: Bell },
-              { id: 'announcements', label: 'Announcements', Icon: Volume2 },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
-                className={`
-                  flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm transition whitespace-nowrap flex-shrink-0
-                  ${activeTab === tab.id
-                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'}
-                `}
-              >
-                <tab.Icon className="h-5 w-5" />
-                <span>{tab.label}</span>
-              </button>
-            ))}
-          </nav>
-        </div>
+        <nav className="relative flex gap-2 mb-5 bg-white rounded-xl border border-gray-200 p-2 overflow-x-auto">
+  {[
+    { id: 'statistics', label: 'Statistics', Icon: BarChart3 },
+    { id: 'pending', label: 'Pending Students', Icon: Clock },
+    { id: 'students', label: 'Students', Icon: Users },
+    { id: 'mentors', label: 'Mentors', Icon: UserCog },
+    { id: 'pending-announcements', label: 'Pending Announcements', Icon: Bell },
+    { id: 'announcements', label: 'Announcements', Icon: Volume2 },
+  ].map((tab) => {
+    const isActive = activeTab === tab.id;
 
-        {/* ------------------ FILTERS (only for Pending Students list which uses global pagination) ------------------ */}
+    return (
+      <button
+        key={tab.id}
+        onClick={() => setActiveTab(tab.id as any)}
+        className="relative flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium whitespace-nowrap"
+      >
+        {/* SLIDING ACTIVE BACKGROUND */}
+        {isActive && (
+          <motion.span
+            layoutId="activeTab"
+            className="absolute inset-0 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600"
+            transition={{
+              type: 'spring',
+              stiffness: 400,
+              damping: 30,
+            }}
+          />
+        )}
+
+        {/* CONTENT */}
+        <span
+          className={`relative z-10 flex items-center gap-2 transition-colors duration-300 ${
+            isActive ? 'text-white' : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          <tab.Icon className="h-5 w-5" />
+          {tab.label}
+        </span>
+      </button>
+    );
+  })}
+</nav>
+
+
+
+        {/* footer line with count & per-page + pagination controls at right */}
+        {/* footer line with count & per-page + pagination controls at right */}
         {activeTab === 'pending' && (
-          <div className="mb-6 bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-            {/* Mobile header + toggle */}
-            <div className="md:hidden flex items-center justify-between mb-3">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-indigo-50 flex items-center justify-center">
-                  <Filter className="text-indigo-600" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-semibold text-slate-800">Filters</h3>
-                  <p className="text-xs text-slate-500">Narrow down lists</p>
-                </div>
-              </div>
+          <div className="mt-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3 bg-white rounded-xl border border-gray-200 p-4 mb-6 shadow-sm">
+            <div className="text-sm text-slate-600">
+              {total === 0 ? (
+                <>Showing 0 items</>
+              ) : (
+                <>
+                  Showing <span className="font-semibold text-slate-900">{startIdx + 1}</span>–{' '}
+                  <span className="font-semibold text-slate-900">{endIdx}</span> of{' '}
+                  <span className="font-semibold text-slate-900">{total}</span> items
+                </>
+              )}
+            </div>
 
-              <button
-                onClick={() => setMobileOpen((s) => !s)}
-                aria-expanded={mobileOpen}
-                aria-controls="admin-mobile-filters"
-                className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition"
+            <div className="flex items-center gap-3 md:ml-auto">
+              <label className="text-xs text-slate-600 hidden md:inline">Per page</label>
+              <select
+                value={pageSize}
+                onChange={(e) => {
+                  setPageSize(Number(e.target.value));
+                  setPage(1);
+                }}
+                className="px-2 py-1 rounded-lg border border-gray-200 bg-white text-sm focus:ring-indigo-500 focus:border-indigo-500"
               >
-                Filters
-                <svg
-                  className={`w-3 h-3 transform transition-transform ${mobileOpen ? 'rotate-180' : 'rotate-0'}`}
-                  viewBox="0 0 20 20"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path d="M5 8L10 13L15 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </button>
-            </div>
+                {[6, 12, 24, 48].map((n) => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
+              </select>
 
-            {/* Mobile stacked filters */}
-            {mobileOpen && (
-              <div id="admin-mobile-filters" className="md:hidden mb-4 space-y-3">
-                <div>
-                  <label className="text-xs font-semibold text-gray-600 mb-1 block">Search</label>
-                  <div className="relative">
-                    <Search className="absolute left-3 top-3 text-gray-400" size={16} />
-                    <input
-                      type="text"
-                      placeholder="Name, email or title..."
-                      value={filters.search}
-                      onChange={(e) => handleFilterChange('search', e.target.value)}
-                      className="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-200 focus:ring-indigo-500 focus:border-indigo-500"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-xs font-semibold text-gray-600 mb-1 block">College</label>
-                  <select
-                    value={filters.college}
-                    onChange={(e) => handleFilterChange('college', e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:ring-indigo-500 focus:border-indigo-500"
-                  >
-                    <option value="">All Colleges</option>
-                    {colleges.map((c) => (
-                      <option key={c} value={c}>
-                        {c}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="text-xs font-semibold text-gray-600 mb-1 block">City</label>
-                  <select
-                    value={filters.city}
-                    onChange={(e) => handleFilterChange('city', e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:ring-indigo-500 focus:border-indigo-500"
-                  >
-                    <option value="">All Cities</option>
-                    {cities.map((c) => (
-                      <option key={c} value={c}>
-                        {c}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="text-xs font-semibold text-gray-600 mb-1 block">Batch</label>
-                  <select
-                    value={filters.batch}
-                    onChange={(e) => handleFilterChange('batch', e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:ring-indigo-500 focus:border-indigo-500"
-                  >
-                    <option value="">All Batches</option>
-                    {batches.map((b) => (
-                      <option key={b} value={b}>
-                        {b}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <button
-                    onClick={() => {
-                      clearFilters();
-                    }}
-                    className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-indigo-100 text-indigo-700 border border-indigo-200 hover:bg-indigo-200 transition"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    Clear Filters
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Desktop / tablet grid filters */}
-            <div className="hidden md:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-              {/* Search */}
-              <div>
-                <label className="text-xs font-semibold text-gray-600 mb-1 block">Search</label>
-                <div className="relative">
-                  <Search className="absolute left-3 top-3 text-gray-400" size={16} />
-                  <input
-                    type="text"
-                    placeholder="Name, email or title..."
-                    value={filters.search}
-                    onChange={(e) => handleFilterChange('search', e.target.value)}
-                    className="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-200 focus:ring-indigo-500 focus:border-indigo-500"
-                  />
-                </div>
-              </div>
-
-              {/* College */}
-              <div>
-                <label className="text-xs font-semibold text-gray-600 mb-1 block">College</label>
-                <select
-                  value={filters.college}
-                  onChange={(e) => handleFilterChange('college', e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:ring-indigo-500 focus:border-indigo-500"
-                >
-                  <option value="">All Colleges</option>
-                  {colleges.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* City */}
-              <div>
-                <label className="text-xs font-semibold text-gray-600 mb-1 block">City</label>
-                <select
-                  value={filters.city}
-                  onChange={(e) => handleFilterChange('city', e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:ring-indigo-500 focus:border-indigo-500"
-                >
-                  <option value="">All Cities</option>
-                  {cities.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Batch */}
-              <div>
-                <label className="text-xs font-semibold text-gray-600 mb-1 block">Batch</label>
-                <select
-                  value={filters.batch}
-                  onChange={(e) => handleFilterChange('batch', e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:ring-indigo-500 focus:border-indigo-500"
-                >
-                  <option value="">All Batches</option>
-                  {batches.map((b) => (
-                    <option key={b} value={b}>
-                      {b}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Clear */}
-              <div className="flex items-end xl:items-center">
+              {/* Pagination controls moved to bottom-right */}
+              <div className="ml-2 flex items-center gap-2">
                 <button
-                  onClick={clearFilters}
-                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-indigo-100 text-indigo-700 border border-indigo-200 hover:bg-indigo-200 transition"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page <= 1}
+                  className={`flex items-center gap-2 px-3 py-1 rounded-md border border-gray-200 bg-white text-sm ${page <= 1 ? 'opacity-50 cursor-not-allowed' : 'hover:shadow hover:bg-gray-50'
+                    }`}
                 >
-                  <Trash2 className="w-4 h-4" />
-                  Clear Filters
+                  <ChevronLeft className="w-4 h-4" />
+                  Prev
                 </button>
-              </div>
-            </div>
 
-            {/* footer line with count & per-page + pagination controls at right */}
-            <div className="mt-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-              <div className="text-sm text-slate-600">
-                {total === 0 ? (
-                  <>Showing 0 items</>
-                ) : (
-                  <>
-                    Showing <span className="font-semibold text-slate-900">{startIdx + 1}</span>–{' '}
-                    <span className="font-semibold text-slate-900">{endIdx}</span> of{' '}
-                    <span className="font-semibold text-slate-900">{total}</span> items
-                  </>
-                )}
-              </div>
+                <span className="text-sm text-slate-600 px-2">
+                  Page {page}/{totalPages}
+                </span>
 
-              <div className="flex items-center gap-3 md:ml-auto">
-                <label className="text-xs text-slate-600 hidden md:inline">Per page</label>
-                <select
-                  value={pageSize}
-                  onChange={(e) => {
-                    setPageSize(Number(e.target.value));
-                    setPage(1);
-                  }}
-                  className="px-2 py-1 rounded-lg border border-gray-200 bg-white text-sm"
+                <button
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page >= totalPages}
+                  className={`flex items-center gap-2 px-3 py-1 rounded-md border border-gray-200 bg-white text-sm ${page >= totalPages ? 'opacity-50 cursor-not-allowed' : 'hover:shadow hover:bg-gray-50'
+                    }`}
                 >
-                  {[6, 12, 24, 48].map((n) => (
-                    <option key={n} value={n}>
-                      {n}
-                    </option>
-                  ))}
-                </select>
-
-                {/* Pagination controls moved to bottom-right */}
-                <div className="ml-2 flex items-center gap-2">
-                  <button
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                    disabled={page <= 1}
-                    className={`flex items-center gap-2 px-3 py-1 rounded-md border border-gray-200 bg-white text-sm ${page <= 1 ? 'opacity-50 cursor-not-allowed' : 'hover:shadow'}`}
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                    Prev
-                  </button>
-
-                  <span className="text-sm text-slate-600 px-2">Page {page}/{totalPages}</span>
-
-                  <button
-                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                    disabled={page >= totalPages}
-                    className={`flex items-center gap-2 px-3 py-1 rounded-md border border-gray-200 bg-white text-sm ${page >= totalPages ? 'opacity-50 cursor-not-allowed' : 'hover:shadow'}`}
-                  >
-                    Next
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
+                  Next
+                  <ChevronRight className="w-4 h-4" />
+                </button>
               </div>
             </div>
           </div>
         )}
+
 
         {/* ------------------ LOADING / TABS CONTENT ------------------ */}
         {loading ? (
@@ -669,6 +480,10 @@ export default function AdminDashboard() {
                     onApprove={() => {
                       setSelectedStudent(student);
                       setShowApproveModal(true);
+                    }}
+                    onReject={() => {
+                      setSelectedStudent(student);
+                      setShowRejectStudentModal(true);
                     }}
                   />
                 )}
@@ -766,11 +581,17 @@ export default function AdminDashboard() {
           handleSendAnnouncement={handleSendAnnouncement}
           showAddMentorModal={showAddMentorModal}
           setShowAddMentorModal={setShowAddMentorModal}
+
           loadData={loadData}
+          showRejectStudentModal={showRejectStudentModal}
+          setShowRejectStudentModal={setShowRejectStudentModal}
+
+          handleRejectStudent={handleRejectStudent}
+          isRejectingStudent={isRejectingStudent}
         />
 
       </div>
-    </div>
+    </div >
   );
 }
 
@@ -829,7 +650,7 @@ function ResponsiveList({ items, emptyText, renderItem }: any) {
    CUSTOM CARDS
 -------------------------------------------------------------- */
 
-function StudentPendingCard({ student, onApprove }: any) {
+function StudentPendingCard({ student, onApprove, onReject }: any) {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4
     flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
@@ -843,12 +664,20 @@ function StudentPendingCard({ student, onApprove }: any) {
         </p>
       </div>
 
-      <button
-        onClick={onApprove}
-        className="w-full sm:w-auto px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg"
-      >
-        Approve
-      </button>
+      <div className="flex gap-2 w-full sm:w-auto">
+        <button
+          onClick={onApprove}
+          className="flex-1 sm:flex-none px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg"
+        >
+          Approve
+        </button>
+        <button
+          onClick={onReject}
+          className="flex-1 sm:flex-none px-4 py-2 bg-red-600 text-white hover:bg-red-700 rounded-lg"
+        >
+          Reject
+        </button>
+      </div>
     </div>
   );
 }
@@ -1151,6 +980,44 @@ function Modals(props: any) {
           props.loadData(true);
         }}
       />
+
+      <Modal
+        isOpen={props.showRejectStudentModal}
+        onClose={() => props.setShowRejectStudentModal(false)}
+        title="Reject Student Request"
+      >
+        <div className="space-y-4">
+          <p>
+            Are you sure you want to reject <strong>{props.selectedStudent?.firstName} {props.selectedStudent?.lastName}</strong>?
+            This will delete their account request permanently.
+          </p>
+          <div className="flex gap-3">
+            <button
+              onClick={props.handleRejectStudent}
+              disabled={props.isRejectingStudent}
+              className="btn btn-danger flex-1 flex justify-center items-center gap-2"
+            >
+              {props.isRejectingStudent ? (
+                <>
+                  <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Rejecting...
+                </>
+              ) : (
+                'Reject & Delete'
+              )}
+            </button>
+            <button
+              onClick={() => props.setShowRejectStudentModal(false)}
+              className="btn btn-secondary flex-1"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </Modal>
     </>
   );
 }

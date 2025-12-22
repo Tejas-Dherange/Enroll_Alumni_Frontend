@@ -9,6 +9,10 @@ export const adminAPI = {
         const response = await api.post('/admin/approve-student', { studentId, mentorId });
         return response.data;
     },
+    rejectStudent: async (studentId: string) => {
+        const response = await api.post('/admin/reject-student', { studentId });
+        return response.data;
+    },
     getAllMentors: async () => {
         const response = await api.get('/admin/mentors');
         return response.data;
@@ -64,6 +68,14 @@ export const adminAPI = {
     },
     deleteAnnouncement: async (announcementId: string) => {
         const response = await api.delete(`/admin/announcements/${announcementId}`);
+        return response.data;
+    },
+    getColleges: async () => {
+        const response = await api.get('/admin/colleges');
+        return response.data;
+    },
+    getCities: async () => {
+        const response = await api.get('/admin/cities');
         return response.data;
     },
 };

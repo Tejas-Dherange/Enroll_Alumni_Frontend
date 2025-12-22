@@ -1,12 +1,20 @@
-import React, { useState } from 'react';
+// src/pages/ForgotPassword.tsx
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { authAPI } from '../api/auth';
+import alumniBg from '../assests/alumnis.jpg';
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setMounted(true), 20);
+    return () => clearTimeout(t);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -17,108 +25,111 @@ export default function ForgotPassword() {
       await authAPI.requestPasswordReset(email);
       setSuccess(true);
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Request failed');
+      setError(err?.response?.data?.error || 'Request failed');
     } finally {
       setLoading(false);
     }
   };
 
-  if (success) {
-    return (
-      <div className="auth-page-root">
-        <div className="wrapper" role="status" aria-live="polite">
-          <div className="title-text" aria-hidden>
-            <div className="title login">Reset Link Sent</div>
-            <div className="title signup">Check Your Email</div>
-          </div>
+  return (
+    <div
+      className="min-h-screen flex items-center justify-center bg-gray-900/30 relative"
+      style={{
+        backgroundImage: `url(${alumniBg})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+      }}
+    >
+      {/* dark overlay */}
+      <div className="absolute inset-0 bg-black/55" />
 
-          <div className="form-container">
-            <div className="form-inner" style={{ transform: 'translateX(0%)' }}>
-              <div className="form-panel">
-                <div className="success-block" style={{ padding: 20, textAlign: 'center' }}>
-                  <div className="success-icon" style={{ background: '#fff0f6', color: '#9b2c6b' }}>
-                    {/* stylized envelope icon */}
-                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M4 4h16v16H4z" />
-                      <path d="M22 6l-10 7L2 6" />
-                    </svg>
-                  </div>
-
-                  <h2 className="text-2xl" style={{ marginTop: 12, marginBottom: 6, color: '#111', fontWeight: 700 }}>
-                    Check your email
-                  </h2>
-                  <p style={{ color: '#555', marginBottom: 18 }}>
-                    If an account exists with this email, you'll receive password reset instructions.
-                  </p>
-
-                  <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
-                    <Link to="/login" className="submit-btn" style={{ width: 160, height: 40, textAlign: 'center', lineHeight: '40px', padding: 0 }}>
-                      Back to Login
-                    </Link>
-                  </div>
-                </div>
+      <div className="relative z-10 w-full max-w-md mx-auto px-4">
+        <div
+          className={`rounded-2xl border border-white/10 bg-white/10 backdrop-blur-md p-8 shadow-xl transition-all duration-500
+          ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
+        >
+          {!success ? (
+            <>
+              {/* Header */}
+              <div className="text-center mb-6">
+                <h2 className="text-3xl font-extrabold text-white">
+                  Forgot your password?
+                </h2>
+                <p className="text-sm text-white/80 mt-1">
+                  Enter your email and we’ll send you a reset link.
+                </p>
               </div>
 
-              {/* second panel blank to preserve layout symmetry */}
-              <div className="form-panel" />
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="auth-page-root">
-      <div className="wrapper" role="form" aria-labelledby="forgot-title">
-        <div className="title-text" aria-hidden>
-          <div className="title login">Forgot Password</div>
-          <div className="title signup">Reset Link</div>
-        </div>
-
-        <div className="form-container">
-          <div className="form-inner" style={{ transform: 'translateX(0%)' }}>
-            <div className="form-panel">
-              <form className="auth-form" onSubmit={handleSubmit} aria-label="Forgot password form" style={{ animation: 'fadeInUp .45s ease both' }}>
-                <h3 id="forgot-title" style={{ textAlign: 'center', marginBottom: 6, fontSize: 20, fontWeight: 700 }}>Reset your password</h3>
-                <p style={{ textAlign: 'center', marginBottom: 16, color: '#666' }}>Enter your email address and we'll send you a reset link</p>
-
+              {/* Form */}
+              <form onSubmit={handleSubmit} className="space-y-5">
                 {error && (
-                  <div className="alert error" role="alert" style={{ marginBottom: 12 }}>
+                  <div className="bg-red-50/80 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
                     {error}
                   </div>
                 )}
 
-                <div className="field">
-                  <label htmlFor="email" className="label">Email address</label>
+                <div>
+                  <label
+                    htmlFor="email"
+                    className="block text-sm font-medium text-white/90 mb-1"
+                  >
+                    Email address
+                  </label>
                   <input
                     id="email"
-                    name="email"
                     type="email"
                     required
-                    className="input"
-                    placeholder="Enter your email"
+                    placeholder="you@gmail.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    className="w-full rounded-md border border-white/20 bg-white/85 px-3 py-2 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition"
                     autoComplete="email"
                   />
                 </div>
 
-                <div className="btn" style={{ marginTop: 18 }}>
-                  <button type="submit" disabled={loading} className="submit-btn" style={{ width: '100%' }}>
-                    {loading ? 'Sending...' : 'Send Reset Link'}
-                  </button>
-                </div>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full rounded-md py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold shadow-md hover:scale-[1.01] transition disabled:opacity-60"
+                >
+                  {loading ? 'Sending link...' : 'Send reset link'}
+                </button>
 
-                <div className="text-center" style={{ marginTop: 12 }}>
-                  <Link to="/login" className="link">Back to Login</Link>
+                <div className="text-center text-sm text-white/90">
+                  <Link to="/login" className="underline">
+                    Back to login
+                  </Link>
                 </div>
               </form>
-            </div>
+            </>
+          ) : (
+            /* Success State */
+            <div className="text-center py-6">
+              <div className="mx-auto mb-4 w-14 h-14 rounded-full bg-green-500/20 flex items-center justify-center text-green-400 text-2xl">
+                ✓
+              </div>
 
-            {/* empty second panel to keep symmetric layout like other auth pages */}
-            <div className="form-panel" />
-          </div>
+              <h3 className="text-2xl font-bold text-white mb-2">
+                Check your email
+              </h3>
+              <p className="text-white/80 mb-6">
+                If an account exists for <strong>{email}</strong>, you’ll receive
+                a password reset link shortly.
+              </p>
+
+              <Link
+                to="/login"
+                className="inline-block rounded-md px-6 py-2 bg-white/90 text-gray-900 font-medium hover:bg-white transition"
+              >
+                Back to Login
+              </Link>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="mt-6 text-center text-xs text-white/70">
+          Having trouble? Contact support.
         </div>
       </div>
     </div>
