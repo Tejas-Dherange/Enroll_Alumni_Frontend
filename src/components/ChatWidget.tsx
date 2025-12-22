@@ -57,14 +57,29 @@ export default function ChatWidget({ isOpen, onClose, studentId, studentName }: 
         e.preventDefault();
         if (!newMessage.trim()) return;
 
+        const messageContent = newMessage.trim();
         setLoading(true);
+        setNewMessage(''); // Clear input immediately for better UX
+
+        // Optimistically add message to UI
+        const optimisticMessage = {
+            id: `temp-${Date.now()}`,
+            content: messageContent,
+            sentAt: new Date().toISOString(),
+            isMine: true,
+        };
+        setMessages(prev => [...prev, optimisticMessage]);
+
         try {
-            await messageAPI.sendMessage(studentId, newMessage);
-            setNewMessage('');
-            await loadMessages();
+            await messageAPI.sendMessage(studentId, messageContent);
+            // Delay refresh slightly to avoid jarring immediate reload
+            // This gives the user time to see their message appear smoothly
+            setTimeout(() => loadMessages(), 1000);
         } catch (error) {
             console.error('Failed to send message:', error);
-            // alert('Failed to send message'); // Removed alert for better UX, maybe add a toast later
+            // Remove optimistic message on error
+            setMessages(prev => prev.filter(m => m.id !== optimisticMessage.id));
+            setNewMessage(messageContent); // Restore message on error
         } finally {
             setLoading(false);
         }
@@ -112,7 +127,7 @@ export default function ChatWidget({ isOpen, onClose, studentId, studentName }: 
 
                     <div className="flex items-center space-x-1">
                         {/* Visual-only action buttons for premium feel */}
-                        
+
                         <button
                             onClick={() => loadMessages(true)}
                             className="p-2 text-gray-400 hover:text-gray-900 rounded-full hover:bg-gray-100 transition-colors"
@@ -163,8 +178,8 @@ export default function ChatWidget({ isOpen, onClose, studentId, studentName }: 
                                         {/* Avatar for message sender */}
                                         <div
                                             className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-[10px] font-bold pb-0.5 shadow-sm ring-2 ring-white ${isMine
-                                                    ? 'bg-indigo-100 text-indigo-600'
-                                                    : 'bg-gray-200 text-gray-600'
+                                                ? 'bg-indigo-100 text-indigo-600'
+                                                : 'bg-gray-200 text-gray-600'
                                                 }`}
                                         >
                                             {isMine ? getUserInitials() : getInitials(studentName)}

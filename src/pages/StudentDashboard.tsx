@@ -20,6 +20,7 @@ import api from '../api/auth';
 import { StudentDashboardSkeleton } from '../components/DashboardSkeleton';
 import { cache } from '../utils/cache';
 import EditProfileModal from '../components/EditProfileModal';
+import ChatWidget from '../components/ChatWidget';
 
 export default function StudentDashboard() {
   const { user } = useAuthStore();
@@ -28,6 +29,7 @@ export default function StudentDashboard() {
   const [loading, setLoading] = useState(true);
   const [studentProfile, setStudentProfile] = useState<any | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showChatWidget, setShowChatWidget] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -275,13 +277,13 @@ export default function StudentDashboard() {
                     <p className="text-sm text-gray-600 mt-1 break-all">{mentor.email}</p>
                   </div>
 
-                  <Link
-                    to={`/messages?with=${mentor.id}`}
+                  <button
+                    onClick={() => setShowChatWidget(true)}
                     className="mt-4 inline-flex items-center justify-center gap-2 w-full px-4 py-3 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-medium shadow-md hover:shadow-lg transition-all duration-150"
                   >
                     <MessageSquare className="w-4 h-4" />
                     Message Mentor
-                  </Link>
+                  </button>
                 </div>
               </div>
             )}
@@ -378,10 +380,20 @@ export default function StudentDashboard() {
         isOpen={showEditModal}
         onClose={() => setShowEditModal(false)}
         onSuccess={() => {
-          cache.delete('student-dashboard');
+          cache.invalidate('student-dashboard');
           loadData(true);
         }}
       />
+
+      {/* Chat Widget */}
+      {mentor && (
+        <ChatWidget
+          isOpen={showChatWidget}
+          onClose={() => setShowChatWidget(false)}
+          studentId={mentor.id}
+          studentName={`${mentor.firstName} ${mentor.lastName}`}
+        />
+      )}
     </div>
   );
 }

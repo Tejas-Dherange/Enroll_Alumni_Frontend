@@ -84,7 +84,7 @@ export default function MentorDashboard() {
     const handleCreateAnnouncement = async (title: string, content: string) => {
         try {
             await announcementAPI.createMentorAnnouncement(title, content);
-            alert('Announcement created and published successfully!');
+            alert('Announcement created successfully! It will be visible after admin approval.');
             setShowAnnouncementModal(false);
         } catch (error) {
             console.error('Failed to create announcement:', error);
@@ -203,8 +203,8 @@ export default function MentorDashboard() {
                                             key={s}
                                             onClick={() => setFilterStatus(s)}
                                             className={`px-3 py-1.5 rounded-full text-sm border transition ${active
-                                                    ? "bg-indigo-600 text-white border-indigo-600"
-                                                    : "bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100"
+                                                ? "bg-indigo-600 text-white border-indigo-600"
+                                                : "bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100"
                                                 }`}
                                         >
                                             {label}
@@ -296,6 +296,7 @@ export default function MentorDashboard() {
                 </div>
             </div>
 
+
             {/* ---------------- Student List ---------------- */}
             {loading ? (
                 <MentorTableSkeleton />
@@ -334,10 +335,10 @@ export default function MentorDashboard() {
                                             <td className="px-6 py-4 text-sm text-gray-500">{s.batchYear}</td>
                                             <td className="px-6 py-4">
                                                 <span className={`px-2 py-1 text-xs rounded-full ${s.status?.toUpperCase() === "ACTIVE"
-                                                        ? "bg-green-100 text-green-800"
-                                                        : s.status?.toUpperCase() === "BLOCKED"
-                                                            ? "bg-red-100 text-red-800"
-                                                            : "bg-yellow-100 text-yellow-800"
+                                                    ? "bg-green-100 text-green-800"
+                                                    : s.status?.toUpperCase() === "BLOCKED"
+                                                        ? "bg-red-100 text-red-800"
+                                                        : "bg-yellow-100 text-yellow-800"
                                                     }`}>
                                                     {s.status}
                                                 </span>
@@ -369,10 +370,10 @@ export default function MentorDashboard() {
                                     </div>
 
                                     <span className={`px-2 py-1 text-xs rounded-full ${s.status?.toUpperCase() === "ACTIVE"
-                                            ? "bg-green-100 text-green-800"
-                                            : s.status?.toUpperCase() === "BLOCKED"
-                                                ? "bg-red-100 text-red-800"
-                                                : "bg-yellow-100 text-yellow-800"
+                                        ? "bg-green-100 text-green-800"
+                                        : s.status?.toUpperCase() === "BLOCKED"
+                                            ? "bg-red-100 text-red-800"
+                                            : "bg-yellow-100 text-yellow-800"
                                         }`}>
                                         {s.status}
                                     </span>

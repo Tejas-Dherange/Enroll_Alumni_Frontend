@@ -25,6 +25,7 @@ import Directory from './pages/Directory';
 import About from './pages/About';
 import Features from './pages/Features';
 import AuthPage from './pages/AuthPage';
+import MyAnnouncements from './pages/MyAnnouncements';
 
 function App() {
     return (
@@ -92,6 +93,15 @@ function App() {
                             element={
                                 <ProtectedRoute allowedRoles={['STUDENT', 'MENTOR']}>
                                     <Messages />
+                                </ProtectedRoute>
+                            }
+                        />
+
+                        <Route
+                            path="/my-announcements"
+                            element={
+                                <ProtectedRoute allowedRoles={['STUDENT', 'MENTOR']}>
+                                    <MyAnnouncements />
                                 </ProtectedRoute>
                             }
                         />
