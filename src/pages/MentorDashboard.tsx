@@ -125,7 +125,7 @@ export default function MentorDashboard() {
                         transition-all duration-200 whitespace-nowrap"
                         aria-label="Create announcement"
                     >
-                        📢 Create Announcement
+                        📢 Public Announcement
                     </button>
 
                     <button

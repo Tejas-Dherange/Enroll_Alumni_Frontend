@@ -11,6 +11,7 @@ export default function Signup() {
     password: '',
     firstName: '',
     lastName: '',
+    mobileNumber: '',
     college: '',
     city: '',
     batchYear: new Date().getFullYear(),
@@ -64,9 +65,8 @@ export default function Signup() {
       >
         <div className="absolute inset-0 bg-black/45 pointer-events-none" />
         <div
-          className={`relative z-10 w-full max-w-md mx-auto rounded-2xl border border-white/10 bg-white/10 backdrop-blur-md p-8 shadow-xl transform transition-all duration-500 ${
-            mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
-          }`}
+          className={`relative z-10 w-full max-w-md mx-auto rounded-2xl border border-white/10 bg-white/10 backdrop-blur-md p-8 shadow-xl transform transition-all duration-500 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
+            }`}
         >
           <div className="text-center mb-6">
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
@@ -204,6 +204,21 @@ export default function Signup() {
                   required
                   className="w-full rounded-md border border-white/20 bg-white/80 px-3 py-2 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition"
                   value={formData.email}
+                  onChange={handleChange}
+                />
+              </div>
+
+              <div>
+                <label htmlFor="mobileNumber" className="block text-sm font-medium text-white/90 mb-1">Mobile number</label>
+                <input
+                  id="mobileNumber"
+                  name="mobileNumber"
+                  placeholder="10-digit mobile number"
+                  type="tel"
+                  required
+                  pattern="[0-9]{10}"
+                  className="w-full rounded-md border border-white/20 bg-white/80 px-3 py-2 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition"
+                  value={formData.mobileNumber}
                   onChange={handleChange}
                 />
               </div>

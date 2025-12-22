@@ -58,6 +58,30 @@ export default function Header() {
     setShowMobileMenu(false);
   };
 
+    const handleLogoClick = (e: React.MouseEvent) => {
+  e.preventDefault();
+
+  if (!isAuthenticated || !user) {
+    navigate('/');
+    return;
+  }
+
+  switch (user.role?.toUpperCase()) {
+    case 'ADMIN':
+      navigate('/admin');
+      break;
+    case 'MENTOR':
+      navigate('/mentor');
+      break;
+    case 'STUDENT':
+      navigate('/student');
+      break;
+    default:
+      navigate('/');
+  }
+};
+
+
   const handleLogout = () => {
     logout();
     navigate('/login');
@@ -187,20 +211,24 @@ export default function Header() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
 
-          {/* Left: Logo */}
-          <Link to="/" className="flex items-center space-x-3 group z-50">
-            <div className="relative">
-              <div className="absolute inset-0 bg-indigo-500 blur-lg opacity-0 group-hover:opacity-20 transition-opacity duration-300 rounded-full"></div>
-              <img
-                src={eelogo}
-                alt="EnrollEngineer logo"
-                className="w-auto h-10 object-contain relative transition-transform duration-300 group-hover:scale-105"
-              />
-            </div>
-            <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-700">
-              College Mitra
-            </span>
-          </Link>
+                    {/* Left: Logo */}
+                  <Link
+                    to="/"
+                    onClick={handleLogoClick}
+                    className="flex items-center space-x-3 group z-50"
+                  >
+                        <div className="relative">
+                            <div className="absolute inset-0 bg-indigo-500 blur-lg opacity-0 group-hover:opacity-20 transition-opacity duration-300 rounded-full"></div>
+                            <img
+                                src={eelogo}
+                                alt="EnrollEngineer logo"
+                                className="w-auto h-10 object-contain relative transition-transform duration-300 group-hover:scale-105"
+                            />
+                        </div>
+                        <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-700">
+                            College Mitra
+                        </span>
+                    </Link>
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-1">
