@@ -172,21 +172,13 @@ export default function StudentDashboard() {
                 <p className="font-semibold">{mentor.firstName} {mentor.lastName}</p>
                 <p className="text-sm text-gray-600">{mentor.email}</p>
 
-                  <button
-                    onClick={() => setShowChatWidget(true)}
-                    className="mt-4 inline-flex items-center justify-center gap-2 w-full px-4 py-3 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-medium shadow-md hover:shadow-lg transition-all duration-150"
-                  >
-                    <MessageSquare className="w-4 h-4" />
-                    Message Mentor
-                  </button>
-                </div>
-                <Link
-                  to={`/messages?with=${mentor.id}`}
-                  className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 text-white px-4 py-3 hover:bg-indigo-700 transition"
+                <button
+                  onClick={() => setShowChatWidget(true)}
+                  className="mt-4 inline-flex items-center justify-center gap-2 w-full px-4 py-3 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-medium shadow-md hover:shadow-lg transition-all duration-150"
                 >
                   <MessageSquare className="w-4 h-4" />
                   Message Mentor
-                </Link>
+                </button>
               </div>
             )}
 
@@ -207,9 +199,9 @@ export default function StudentDashboard() {
               </p>
               <p className="text-sm text-gray-600">{user?.email}</p>
 
-              <ProfileRow icon={<Building2 className='text-blue-500'/>} label="College" value={user?.profile?.college} />
-              <ProfileRow icon={<MapPin className='text-blue-500'/>} label="City" value={user?.profile?.city} />
-              <ProfileRow icon={<GraduationCap className='text-blue-500'/>} label="Batch" value={user?.profile?.batchYear} />
+              <ProfileRow icon={<Building2 className='text-blue-500' />} label="College" value={user?.profile?.college} />
+              <ProfileRow icon={<MapPin className='text-blue-500' />} label="City" value={user?.profile?.city} />
+              <ProfileRow icon={<GraduationCap className='text-blue-500' />} label="Batch" value={user?.profile?.batchYear} />
 
               {(user?.linkedInUrl || user?.githubUrl) && (
                 <div className="mt-4 pt-3 border-t">
